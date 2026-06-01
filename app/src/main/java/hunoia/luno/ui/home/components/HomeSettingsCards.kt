@@ -1,0 +1,215 @@
+package hunoia.luno.ui.home
+
+import hunoia.luno.ui.theme.*
+import hunoia.luno.R
+import hunoia.luno.ui.component.ExpressiveCard
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AcUnit
+import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.automirrored.filled.LibraryBooks
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.res.stringResource
+import kotlin.math.roundToInt
+
+@Composable
+fun HomeExcludeCard(uiState: UiState, onClick: () -> Unit) {
+    ExpressiveCard(
+        title = stringResource(id = R.string.exclude_app_short),
+        subtitle = stringResource(id = R.string.exclude_app_hint),
+        icon = Icons.Default.Block,
+        onClick = onClick,
+        accent = MaterialTheme.colorScheme.secondaryContainer,
+        onAccent = MaterialTheme.colorScheme.onSecondaryContainer,
+    ) {
+        FilledTonalButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(id = R.string.manage_exclude))
+        }
+    }
+}
+
+@Composable
+fun HomePointerCard(onClick: () -> Unit) {
+    ExpressiveCard(
+        title = stringResource(id = R.string.pointer),
+        subtitle = stringResource(id = R.string.pointer_hint),
+        icon = Icons.Default.TouchApp,
+        onClick = onClick,
+    ) {
+        FilledTonalButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(id = R.string.pointer_settings))
+        }
+    }
+}
+
+@Composable
+fun HomeActionLibraryCard(onClick: () -> Unit) {
+    ExpressiveCard(
+        title = stringResource(id = R.string.action_library),
+        subtitle = stringResource(id = R.string.action_library_hint),
+        icon = Icons.AutoMirrored.Filled.LibraryBooks,
+        onClick = onClick,
+        accent = MaterialTheme.colorScheme.primaryContainer,
+        onAccent = MaterialTheme.colorScheme.onPrimaryContainer,
+    ) {
+        FilledTonalButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(id = R.string.manage_action_library))
+        }
+    }
+}
+
+@Composable
+fun HomeActionSettingsCard(onClick: () -> Unit) {
+    ExpressiveCard(
+        title = stringResource(id = R.string.action_settings),
+        subtitle = stringResource(id = R.string.action_settings_hint),
+        icon = Icons.Default.Tune,
+        onClick = onClick,
+        accent = MaterialTheme.colorScheme.secondaryContainer,
+        onAccent = MaterialTheme.colorScheme.onSecondaryContainer,
+    ) {
+        FilledTonalButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(id = R.string.manage_action_settings))
+        }
+    }
+}
+
+@Composable
+fun HomeFrozenCard(
+    uiState: UiState,
+    onClick: () -> Unit,
+    onFreezeClick: () -> Unit,
+    onUnfreezeClick: () -> Unit,
+) {
+    ExpressiveCard(
+        title = stringResource(id = R.string.frozen_app_manage_short),
+        subtitle = stringResource(id = R.string.frozen_app_count_info, uiState.selectedFrozenAppCount, uiState.frozenAppCount),
+        icon = Icons.Default.AcUnit,
+        onClick = onClick,
+        accent = MaterialTheme.colorScheme.tertiaryContainer,
+        onAccent = MaterialTheme.colorScheme.onTertiaryContainer,
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing12)) {
+            FilledTonalButton(onClick = onFreezeClick, modifier = Modifier.weight(1f)) {
+                Text(stringResource(id = R.string.freeze_action))
+            }
+            FilledTonalButton(onClick = onUnfreezeClick, modifier = Modifier.weight(1f)) {
+                Text(stringResource(id = R.string.unfreeze_action))
+            }
+        }
+    }
+}
+
+@Composable
+fun HomeToolsCard(
+    onBackupClick: () -> Unit,
+    onRestoreClick: () -> Unit,
+    onResetToggle: () -> Unit,
+    showResetConfirm: Boolean,
+    onResetConfirm: () -> Unit,
+    onResetDismiss: () -> Unit,
+    onCardAreaPosition: (Int) -> Unit,
+) {
+    ExpressiveCard(
+        title = stringResource(id = R.string.tools),
+        subtitle = stringResource(id = R.string.backup_restore_default_hint),
+        icon = Icons.Default.Build,
+        onClick = {},
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing12)) {
+            FilledTonalButton(onClick = onBackupClick, modifier = Modifier.weight(1f)) {
+                Text(stringResource(id = R.string.backup))
+            }
+            FilledTonalButton(onClick = onRestoreClick, modifier = Modifier.weight(1f)) {
+                Text(stringResource(id = R.string.restore))
+            }
+            FilledTonalButton(onClick = onResetToggle, modifier = Modifier.weight(1f)) {
+                Text(stringResource(id = R.string.default_action))
+            }
+        }
+        AnimatedVisibility(
+            visible = showResetConfirm,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut(),
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onGloballyPositioned { coords ->
+                        onCardAreaPosition(coords.positionInWindow().y.roundToInt())
+                    }
+                    .padding(top = Spacing12),
+                shape = MaterialTheme.shapes.large,
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+            ) {
+                Column(modifier = Modifier.padding(Spacing14)) {
+                    Text(
+                        text = stringResource(id = R.string.reset_default_settings_warning),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                    Spacer(Modifier.height(Spacing12))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing6),
+                    ) {
+                        FilledTonalButton(
+                            onClick = onResetDismiss,
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text(stringResource(id = R.string.cancel))
+                        }
+                        FilledTonalButton(
+                            onClick = onResetConfirm,
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text(stringResource(id = R.string.confirm_reset))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun HomeKeepAliveCard(
+    enabled: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    HomeCard(
+        title = stringResource(id = R.string.keep_alive),
+        subtitle = stringResource(id = R.string.keep_alive_hint),
+        leading = {
+            HomeCardIcon(Icons.Default.Security)
+        },
+        onClick = { onCheckedChange(!enabled) },
+        trailing = {
+            Switch(checked = enabled, onCheckedChange = onCheckedChange)
+        },
+    )
+}
