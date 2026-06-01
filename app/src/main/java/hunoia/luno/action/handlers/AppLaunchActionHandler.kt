@@ -107,14 +107,15 @@ object AppLaunchActionHandler : ActionHandler {
         }
         val raw = data?.url?.trim() ?: return ActionExecutionResult.Ignored
         if (raw.isBlank()) return ActionExecutionResult.Ignored
+        val finalUrl = OpenUrlBuilder.build(raw, data)
         return try {
             val intent = when {
-                raw.startsWith("intent:") ->
-                    Intent.parseUri(raw, Intent.URI_INTENT_SCHEME)
-                raw.startsWith("android-app:") ->
-                    Intent.parseUri(raw, Intent.URI_ANDROID_APP_SCHEME)
+                finalUrl.startsWith("intent:") ->
+                    Intent.parseUri(finalUrl, Intent.URI_INTENT_SCHEME)
+                finalUrl.startsWith("android-app:") ->
+                    Intent.parseUri(finalUrl, Intent.URI_ANDROID_APP_SCHEME)
                 else ->
-                    Intent(Intent.ACTION_VIEW, Uri.parse(raw).normalizeScheme())
+                    Intent(Intent.ACTION_VIEW, Uri.parse(finalUrl).normalizeScheme())
             }
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.appContext.startActivity(intent)

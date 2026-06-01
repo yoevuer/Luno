@@ -44,7 +44,9 @@ import kotlinx.coroutines.withContext
 @Composable
 fun ShellCommandSettingsContent(
     action: Action,
-    onConfirm: (String) -> Unit
+    onConfirm: (String) -> Unit,
+    showConfirmButton: Boolean = true,
+    onDataChange: ((String) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -65,7 +67,10 @@ fun ShellCommandSettingsContent(
         OutlinedTextField(
             modifier = Modifier.fillMaxWidth(),
             value = command,
-            onValueChange = { command = it.take(2000) },
+            onValueChange = {
+                command = it.take(2000)
+                onDataChange?.invoke(JsonSerializer.encodeToString(ShellCommandData(command.trim(), showToast)))
+            },
             label = { Text(stringResource(R.string.shell_command_label)) },
             placeholder = { Text(stringResource(R.string.shell_command_placeholder)) },
             minLines = 3,
@@ -88,7 +93,10 @@ fun ShellCommandSettingsContent(
             )
             Switch(
                 checked = showToast,
-                onCheckedChange = { showToast = it }
+                onCheckedChange = {
+                    showToast = it
+                    onDataChange?.invoke(JsonSerializer.encodeToString(ShellCommandData(command.trim(), showToast)))
+                }
             )
         }
         if (testOutput.isNotBlank()) {
@@ -152,14 +160,16 @@ fun ShellCommandSettingsContent(
             ) {
                 Text(stringResource(if (testing) R.string.testing else R.string.test))
             }
-            TextButton(
-                enabled = command.isNotBlank(),
-                onClick = {
-                    onConfirm(JsonSerializer.encodeToString(ShellCommandData(command.trim(), showToast)))
+            if (showConfirmButton) {
+                TextButton(
+                    enabled = command.isNotBlank(),
+                    onClick = {
+                        onConfirm(JsonSerializer.encodeToString(ShellCommandData(command.trim(), showToast)))
+                    }
+                ) {
+                    Icon(imageVector = Icons.Default.Check, contentDescription = null)
+                    Text(text = stringResource(id = R.string.confirm))
                 }
-            ) {
-                Icon(imageVector = Icons.Default.Check, contentDescription = null)
-                Text(text = stringResource(id = R.string.confirm))
             }
         }
     }

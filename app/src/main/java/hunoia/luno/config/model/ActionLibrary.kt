@@ -1,9 +1,9 @@
 package hunoia.luno.config.model
 
-import android.os.SystemClock
 import androidx.annotation.Keep
 import hunoia.luno.core.JsonSerializer
 import kotlinx.serialization.Serializable
+import java.util.UUID
 
 @Serializable
 @Keep
@@ -28,7 +28,7 @@ data class ActionLibraryEntry(
     companion object {
         fun create(type: ActionLibraryType, name: String = ""): ActionLibraryEntry {
             return ActionLibraryEntry(
-                id = SystemClock.uptimeMillis().toString(),
+                id = UUID.randomUUID().toString(),
                 type = type,
                 name = name,
                 openAppOrUrl = when (type) {
@@ -36,6 +36,14 @@ data class ActionLibraryEntry(
                     ActionLibraryType.Url -> OpenAppOrUrlData(type = OpenAppOrUrlData.TYPE_URL)
                     ActionLibraryType.Shell -> OpenAppOrUrlData()
                 }
+            )
+        }
+
+        fun duplicate(entry: ActionLibraryEntry, name: String): ActionLibraryEntry {
+            return entry.copy(
+                id = UUID.randomUUID().toString(),
+                name = name,
+                createdAt = System.currentTimeMillis(),
             )
         }
     }

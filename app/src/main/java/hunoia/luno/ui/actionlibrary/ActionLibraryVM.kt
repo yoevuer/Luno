@@ -56,6 +56,16 @@ class ActionLibraryVM : ViewModel() {
             ConfigProvider.removeActionLibraryEntry(entry.id)
         }
     }
+
+    fun removeAll(entries: List<ActionLibraryEntry>) {
+        viewModelScope.launch {
+            entries.forEach { entry -> ConfigProvider.removeActionLibraryEntry(entry.id) }
+        }
+    }
+
+    fun duplicate(entry: ActionLibraryEntry, name: String) {
+        save(ActionLibraryEntry.duplicate(entry, name))
+    }
 }
 
 fun ActionLibraryEntry.matchesQuery(query: String): Boolean {
@@ -65,7 +75,11 @@ fun ActionLibraryEntry.matchesQuery(query: String): Boolean {
         shellCommand.command.contains(q, ignoreCase = true) ||
         openAppOrUrl.url.contains(q, ignoreCase = true) ||
         openAppOrUrl.packageName.contains(q, ignoreCase = true) ||
-        openAppOrUrl.activityClassName.contains(q, ignoreCase = true)
+        openAppOrUrl.activityClassName.contains(q, ignoreCase = true) ||
+        openAppOrUrl.queryParameters.any { parameter ->
+            parameter.name.contains(q, ignoreCase = true) ||
+                parameter.value.contains(q, ignoreCase = true)
+        }
 }
 
 private fun countReferences(

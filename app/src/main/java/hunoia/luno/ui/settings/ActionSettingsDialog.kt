@@ -49,7 +49,8 @@ import kotlinx.coroutines.withContext
 @Composable
 fun ActivitySettingsContent(
     action: hunoia.luno.config.model.Action,
-    onConfirm: (String) -> Unit
+    onConfirm: (String) -> Unit,
+    onDataChange: ((String) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val launcherApps = remember(context) { QuickLaunchFacade.queryLauncherAppOptions(context) }
@@ -187,15 +188,14 @@ fun ActivitySettingsContent(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    onConfirm(
-                                        JsonSerializer.encodeToString(
-                                            OpenAppOrUrlData(
-                                                type = OpenAppOrUrlData.TYPE_ACTIVITY,
-                                                packageName = app.packageName,
-                                                activityClassName = activity.className
-                                            )
+                                    val data = JsonSerializer.encodeToString(
+                                        OpenAppOrUrlData(
+                                            type = OpenAppOrUrlData.TYPE_ACTIVITY,
+                                            packageName = app.packageName,
+                                            activityClassName = activity.className
                                         )
                                     )
+                                    if (onDataChange != null) onDataChange(data) else onConfirm(data)
                                 }
                                 .padding(vertical = Spacing6),
                             horizontalArrangement = Arrangement.spacedBy(ItemPadding),
