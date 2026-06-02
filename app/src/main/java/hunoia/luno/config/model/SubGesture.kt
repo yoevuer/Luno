@@ -14,7 +14,9 @@ data class SubGesture(
     val name: String = "",
     val angle: SubGestureAngle = SubGestureAngle(),
     val slideActions: DirectionActions = DirectionActions(),
+    val slideHoldActions: DirectionActions = DirectionActions(),
     val longSlideActions: DirectionActions = DirectionActions(),
+    val longSlideHoldActions: DirectionActions = DirectionActions(),
     val longSlideActionPanelStyles: LongSlideActionPanelStyles = LongSlideActionPanelStyles(),
     val enabled: Boolean = true,
     val color: Int = Color.TRANSPARENT,
@@ -29,6 +31,8 @@ data class SubGesture(
     val longSlideTriggerDistance: Int = DensityProvider.dp2px(96f),
     val longSlideTriggerImmediately: Boolean = true,
     val longSlideTriggerDelayMs: Long = 100L,
+    val slideHoldTriggerDelayMs: Long = 120L,
+    val longSlideHoldTriggerDelayMs: Long = 120L,
 ) {
     val effectiveLongSlideTriggerDistance: Int
         get() = longSlideTriggerDistance.coerceAtLeast(triggerDistance)
@@ -39,11 +43,21 @@ data class SubGesture(
 
     fun slideActionsFor(direction: GestureDirection): List<Action> = slideActions.actionsBy(direction)
 
+    fun slideHoldActionsFor(direction: GestureDirection): List<Action> = slideHoldActions.actionsBy(direction)
+
     fun longSlideActionsFor(direction: GestureDirection): List<Action> = longSlideActions.actionsBy(direction)
+
+    fun longSlideHoldActionsFor(direction: GestureDirection): List<Action> = longSlideHoldActions.actionsBy(direction)
 
     fun withSlideActions(direction: GestureDirection, newActions: List<Action>): SubGesture =
         copy(slideActions = slideActions.withActions(direction, newActions))
 
+    fun withSlideHoldActions(direction: GestureDirection, newActions: List<Action>): SubGesture =
+        copy(slideHoldActions = slideHoldActions.withActions(direction, newActions))
+
     fun withLongSlideActions(direction: GestureDirection, newActions: List<Action>): SubGesture =
         copy(longSlideActions = longSlideActions.withActions(direction, newActions))
+
+    fun withLongSlideHoldActions(direction: GestureDirection, newActions: List<Action>): SubGesture =
+        copy(longSlideHoldActions = longSlideHoldActions.withActions(direction, newActions))
 }

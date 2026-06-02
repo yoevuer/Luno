@@ -18,10 +18,17 @@ object SubGestureCleaner {
                     slideActions = button.slideActions.copy(
                         actions = button.slideActions.actions.mapValues { (_, actions) -> actions.filterNot(shouldRemove) }
                     ),
+                    slideHoldActions = button.slideHoldActions.copy(
+                        actions = button.slideHoldActions.actions.mapValues { (_, actions) -> actions.filterNot(shouldRemove) }
+                    ),
                     longSlideActions = button.longSlideActions.copy(
                         actions = button.longSlideActions.actions.mapValues { (_, actions) -> actions.filterNot(shouldRemove) }
                     ),
+                    longSlideHoldActions = button.longSlideHoldActions.copy(
+                        actions = button.longSlideHoldActions.actions.mapValues { (_, actions) -> actions.filterNot(shouldRemove) }
+                    ),
                     tapActions = button.tapActions.filterNot(shouldRemove),
+                    doubleTapActions = button.doubleTapActions.filterNot(shouldRemove),
                     longPressActions = button.longPressActions.filterNot(shouldRemove),
                 )
             }
@@ -32,7 +39,9 @@ object SubGestureCleaner {
             val cleanedSubGestures = settings.subGestures.map { gesture ->
                 gesture.copy(
                     slideActions = gesture.slideActions.clean(shouldRemove),
+                    slideHoldActions = gesture.slideHoldActions.clean(shouldRemove),
                     longSlideActions = gesture.longSlideActions.clean(shouldRemove),
+                    longSlideHoldActions = gesture.longSlideHoldActions.clean(shouldRemove),
                 )
             }
             settings.copy(subGestures = cleanedSubGestures)

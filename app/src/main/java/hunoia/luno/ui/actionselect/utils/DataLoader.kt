@@ -7,6 +7,7 @@ import hunoia.luno.config.ConfigProvider
 import hunoia.luno.config.model.Action
 import hunoia.luno.config.model.DirectionActions
 import hunoia.luno.config.model.GestureButton
+import hunoia.luno.config.model.GestureTriggerType
 import hunoia.luno.core.AppContext
 import hunoia.luno.core.JsonSerializer
 import hunoia.luno.core.Paths
@@ -47,26 +48,15 @@ internal suspend fun saveSettingsAction(
     }
     val selectedRecord = getUiState().selectedRecord
     val selectedList = selectedRecord.list.filterIsInstance<Action>()
-    val newActions = when (getUiState().selectSingle) {
-        true -> selectedList.takeLast(1)
-        else -> selectedList
-    }
+    val newActions = selectedList
     if (actionSelect.subGestureId.isNotBlank()) {
         ConfigProvider.updateSubGestureSettings { settings ->
             settings.copy(
                 subGestures = settings.subGestures.map { gesture ->
                     if (gesture.id != actionSelect.subGestureId) return@map gesture
-                    val oldActions = if (actionSelect.isLongSlide) {
-                        gesture.longSlideActionsFor(actionSelect.direction)
-                    } else {
-                        gesture.slideActionsFor(actionSelect.direction)
-                    }
+                    val oldActions = gesture.actionsFor(actionSelect.triggerType, actionSelect.direction)
                     tryDeleteShortcutIcons(oldActions, newActions)
-                    if (actionSelect.isLongSlide) {
-                        gesture.withLongSlideActions(actionSelect.direction, newActions)
-                    } else {
-                        gesture.withSlideActions(actionSelect.direction, newActions)
-                    }
+                    gesture.withActions(actionSelect.triggerType, actionSelect.direction, newActions)
                 }
             )
         }
@@ -88,24 +78,9 @@ internal suspend fun saveSettingsAction(
         if (button == null) {
             return@buttonsUpdater mutableList
         }
-        val gestureActions = when {
-            actionSelect.isTap || actionSelect.isLongPress -> DirectionActions()
-            actionSelect.isLongSlide -> button.longSlideActions
-            else -> button.slideActions
-        }
-        val oldActions = when {
-            actionSelect.isTap -> button.tapActions
-            actionSelect.isLongPress -> button.longPressActions
-            else -> gestureActions.actionsBy(actionSelect.direction)
-        }
+        val oldActions = button.actionsFor(actionSelect.triggerType, actionSelect.direction)
         tryDeleteShortcutIcons(oldActions, newActions)
-        val newGestureActions = gestureActions.withActions(actionSelect.direction, newActions)
-        button = when {
-            actionSelect.isTap -> button.copy(tapActions = newActions)
-            actionSelect.isLongPress -> button.copy(longPressActions = newActions)
-            actionSelect.isLongSlide -> button.copy(longSlideActions = newGestureActions)
-            else -> button.copy(slideActions = newGestureActions)
-        }
+        button = button.withActions(actionSelect.triggerType, actionSelect.direction, newActions)
         mutableList.apply {
             set(index, button)
         }
@@ -285,46 +260,78 @@ internal suspend fun loadDataBody(
     }
     val subGesture = subGestures.find { it.id == actionSelect.subGestureId }
     onUpdateState { state ->
-        val selectSingle = when {
-            subGesture != null -> !actionSelect.isLongSlide || !subGesture.longSlideTriggerImmediately
-            else -> !actionSelect.isLongSlide || (button != null && !button.longSlideTriggerImmediately)
-        }
         state.copy(
-            selectSingle = selectSingle,
-            maxSelectCount = if (selectSingle) 1 else LONG_SLIDE_SOFT_MAX_SELECT_COUNT,
+            selectSingle = false,
+            maxSelectCount = LONG_SLIDE_SOFT_MAX_SELECT_COUNT,
             subGestures = subGestures,
             excludedSubGestureId = actionSelect.subGestureId,
             actionLibraryEntries = actionLibraryEntries,
         )
     }
     val actions = when {
-        subGesture != null -> if (actionSelect.isLongSlide) {
-            subGesture.longSlideActionsFor(actionSelect.direction)
-        } else {
-            subGesture.slideActionsFor(actionSelect.direction)
-        }
-        button != null -> {
-            val gestureActions = when {
-            actionSelect.isTap || actionSelect.isLongPress -> DirectionActions()
-            actionSelect.isLongSlide -> button.longSlideActions
-            else -> button.slideActions
-        }
-            when {
-            actionSelect.isTap -> button.tapActions
-            actionSelect.isLongPress -> button.longPressActions
-            else -> gestureActions.actionsBy(actionSelect.direction)
-            }
-        }
+        subGesture != null -> subGesture.actionsFor(actionSelect.triggerType, actionSelect.direction)
+        button != null -> button.actionsFor(actionSelect.triggerType, actionSelect.direction)
         else -> null
     }
     if (actions != null) {
         onUpdateState { state ->
-            val selectedActions = when (state.selectSingle) {
-                true -> emptyList()
-                else -> actions
-            }
-            val newSelectedRecord = state.selectedRecord.selectAll(selectedActions)
+            val newSelectedRecord = state.selectedRecord.selectAll(actions)
             state.copy(selectedRecord = newSelectedRecord)
         }
+    }
+}
+
+private fun GestureButton.actionsFor(triggerType: GestureTriggerType, direction: hunoia.luno.config.model.GestureDirection): List<Action> {
+    return when (triggerType) {
+        GestureTriggerType.Tap -> tapActions
+        GestureTriggerType.DoubleTap -> doubleTapActions
+        GestureTriggerType.LongPress -> longPressActions
+        GestureTriggerType.Slide -> slideActions.actionsBy(direction)
+        GestureTriggerType.SlideHold -> slideHoldActions.actionsBy(direction)
+        GestureTriggerType.LongSlide -> longSlideActions.actionsBy(direction)
+        GestureTriggerType.LongSlideHold -> longSlideHoldActions.actionsBy(direction)
+    }
+}
+
+private fun GestureButton.withActions(
+    triggerType: GestureTriggerType,
+    direction: hunoia.luno.config.model.GestureDirection,
+    newActions: List<Action>
+): GestureButton {
+    return when (triggerType) {
+        GestureTriggerType.Tap -> copy(tapActions = newActions)
+        GestureTriggerType.DoubleTap -> copy(doubleTapActions = newActions)
+        GestureTriggerType.LongPress -> copy(longPressActions = newActions)
+        GestureTriggerType.Slide -> copy(slideActions = slideActions.withActions(direction, newActions))
+        GestureTriggerType.SlideHold -> copy(slideHoldActions = slideHoldActions.withActions(direction, newActions))
+        GestureTriggerType.LongSlide -> copy(longSlideActions = longSlideActions.withActions(direction, newActions))
+        GestureTriggerType.LongSlideHold -> copy(longSlideHoldActions = longSlideHoldActions.withActions(direction, newActions))
+    }
+}
+
+private fun hunoia.luno.config.model.SubGesture.actionsFor(
+    triggerType: GestureTriggerType,
+    direction: hunoia.luno.config.model.GestureDirection
+): List<Action> {
+    return when (triggerType) {
+        GestureTriggerType.Slide -> slideActionsFor(direction)
+        GestureTriggerType.SlideHold -> slideHoldActionsFor(direction)
+        GestureTriggerType.LongSlide -> longSlideActionsFor(direction)
+        GestureTriggerType.LongSlideHold -> longSlideHoldActionsFor(direction)
+        else -> emptyList()
+    }
+}
+
+private fun hunoia.luno.config.model.SubGesture.withActions(
+    triggerType: GestureTriggerType,
+    direction: hunoia.luno.config.model.GestureDirection,
+    newActions: List<Action>
+): hunoia.luno.config.model.SubGesture {
+    return when (triggerType) {
+        GestureTriggerType.Slide -> withSlideActions(direction, newActions)
+        GestureTriggerType.SlideHold -> withSlideHoldActions(direction, newActions)
+        GestureTriggerType.LongSlide -> withLongSlideActions(direction, newActions)
+        GestureTriggerType.LongSlideHold -> withLongSlideHoldActions(direction, newActions)
+        else -> this
     }
 }

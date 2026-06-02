@@ -3,7 +3,6 @@ package hunoia.luno.ui.actionselect
 import androidx.lifecycle.viewModelScope
 import com.aaron.compose.base.BaseComposeVM
 import hunoia.luno.R
-import hunoia.luno.action.api.ActionFacade
 import hunoia.luno.config.model.Action
 import hunoia.luno.config.model.ActionLibraryEntry
 import hunoia.luno.quicklaunch.model.AppInfo
@@ -18,7 +17,7 @@ class ActionSelectVM(
 
     override val initialState: UiState = UiState(
         title = createTitle(actionSelect),
-        selectSingle = !actionSelect.isLongSlide || actionSelect.isTap
+        selectSingle = false
     )
 
     fun showDialog(show: Boolean, action: Action = Action.NONE) {
@@ -60,23 +59,15 @@ class ActionSelectVM(
             selectLongPressAction(obj)
             return
         }
-        val currentState = uiState
         if (obj is AppInfo) {
             updateUiState { selectAppInfoTransform(it, obj, selected) }
-            if (currentState.selectSingle) saveSettings()
         } else if (obj is LauncherInfo.ShortcutInfo) {
             updateUiState { selectShortcutInfoTransform(it, obj, selected) }
-            if (currentState.selectSingle) saveSettings()
         } else if (obj is Action) {
             updateUiState { selectActionTransform(it, obj, selected) }
-            val needsData = obj.value == ActionFacade.OPEN_APP_ACTIVITY ||
-                obj.value == ActionFacade.OPEN_URL ||
-                obj.value == ActionFacade.EXECUTE_SHELL_COMMAND
-            if (currentState.selectSingle && (!needsData || obj.data.isNotEmpty())) saveSettings()
         } else if (obj is ActionLibraryEntry) {
             val action = obj.toReferenceAction()
             updateUiState { selectActionTransform(it, action, selected) }
-            if (currentState.selectSingle) saveSettings()
         }
     }
 
@@ -101,18 +92,15 @@ class ActionSelectVM(
     }
 
     fun updateActionData(action: Action, data: String) {
-        val currentState = uiState
-        val index = currentState.selectedRecord.list.indexOfFirst { obj -> obj is Action && obj.sameAction(action) }
+        val index = uiState.selectedRecord.list.indexOfFirst { obj -> obj is Action && obj.sameAction(action) }
         if (index == -1) return
-        val current = currentState.selectedRecord.list[index] as Action
+        val current = uiState.selectedRecord.list[index] as Action
         if (current.data == data) return
         updateUiState { updateActionDataTransform(it, action, data) }
-        if (currentState.selectSingle) saveSettings()
     }
 
     fun moveSelectedAction(fromIndex: Int, toIndex: Int) {
         updateUiState { moveSelectedActionTransform(it, fromIndex, toIndex) }
-        if (uiState.selectSingle) saveSettings()
     }
 
     fun toggleMiniWindow(appInfo: AppInfo) {

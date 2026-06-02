@@ -5,15 +5,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import hunoia.luno.R
 import hunoia.luno.config.defaults.SettingsUiDefaults.MaxLongPressTriggerDelayMs
-import hunoia.luno.config.defaults.SettingsUiDefaults.MaxLongSlideTriggerDelayMs
+import hunoia.luno.config.defaults.SettingsUiDefaults.MaxDoubleTapTriggerDelayMs
+import hunoia.luno.config.defaults.SettingsUiDefaults.MaxHoldTriggerDelayMs
 import hunoia.luno.config.defaults.SettingsUiDefaults.MaxLongSlideTriggerDistance
 import hunoia.luno.config.defaults.SettingsUiDefaults.MaxSlideTriggerDistance
 import hunoia.luno.config.defaults.SettingsUiDefaults.MinLongPressTriggerDelayMs
-import hunoia.luno.config.defaults.SettingsUiDefaults.MinLongSlideTriggerDelayMs
+import hunoia.luno.config.defaults.SettingsUiDefaults.MinDoubleTapTriggerDelayMs
+import hunoia.luno.config.defaults.SettingsUiDefaults.MinHoldTriggerDelayMs
 import hunoia.luno.config.defaults.SettingsUiDefaults.MinLongSlideTriggerDistance
 import hunoia.luno.config.defaults.SettingsUiDefaults.MinSlideTriggerDistance
 import hunoia.luno.config.model.GestureButton
-import hunoia.luno.ui.component.ExpressiveSwitchItem
 import hunoia.luno.ui.component.MyColumn
 import hunoia.luno.ui.component.input.MyTextSlider
 
@@ -29,12 +30,14 @@ fun GestureButtonTriggerDistanceContent(
         slideTriggerDistanceRange = MinSlideTriggerDistance.toFloat()..MaxSlideTriggerDistance.toFloat(),
         longPressTriggerDelayMs = button.longPressTriggerDelayMs,
         onLongPressTriggerDelayMsChange = vm::onLongPressTriggerDelayMsChange,
+        doubleTapTriggerDelayMs = button.doubleTapTriggerDelayMs,
+        onDoubleTapTriggerDelayMsChange = vm::onDoubleTapTriggerDelayMsChange,
         longSlideTriggerDistance = button.longSlideTriggerDistance,
         onLongSlideTriggerDistanceChange = vm::onLongSlideTriggerDistanceChange,
-        longSlideTriggerImmediately = button.longSlideTriggerImmediately,
-        onLongSlideTriggerImmediatelyChange = vm::onLongSlideTriggerImmediatelyChange,
-        longSlideTriggerDelayMs = button.longSlideTriggerDelayMs,
-        onLongSlideTriggerDelayMsChange = vm::onLongSlideTriggerDelayMsChange,
+        slideHoldTriggerDelayMs = button.slideHoldTriggerDelayMs,
+        onSlideHoldTriggerDelayMsChange = vm::onSlideHoldTriggerDelayMsChange,
+        longSlideHoldTriggerDelayMs = button.longSlideHoldTriggerDelayMs,
+        onLongSlideHoldTriggerDelayMsChange = vm::onLongSlideHoldTriggerDelayMsChange,
         scrollState = scrollState,
     )
 }
@@ -46,13 +49,15 @@ fun GestureSlideTriggerDistanceContent(
     slideTriggerDistanceRange: ClosedFloatingPointRange<Float>,
     longPressTriggerDelayMs: Long? = null,
     onLongPressTriggerDelayMsChange: ((Float) -> Unit)? = null,
+    doubleTapTriggerDelayMs: Long? = null,
+    onDoubleTapTriggerDelayMsChange: ((Float) -> Unit)? = null,
     longSlideTriggerDistance: Int,
     onLongSlideTriggerDistanceChange: (Float) -> Unit,
     longSlideTriggerDistanceRange: ClosedFloatingPointRange<Float> = MinLongSlideTriggerDistance.toFloat()..MaxLongSlideTriggerDistance.toFloat(),
-    longSlideTriggerImmediately: Boolean,
-    onLongSlideTriggerImmediatelyChange: (Boolean) -> Unit,
-    longSlideTriggerDelayMs: Long,
-    onLongSlideTriggerDelayMsChange: (Float) -> Unit,
+    slideHoldTriggerDelayMs: Long,
+    onSlideHoldTriggerDelayMsChange: (Float) -> Unit,
+    longSlideHoldTriggerDelayMs: Long,
+    onLongSlideHoldTriggerDelayMsChange: (Float) -> Unit,
     scrollState: androidx.compose.foundation.ScrollState? = null,
 ) {
     val content: @Composable () -> Unit = {
@@ -72,6 +77,15 @@ fun GestureSlideTriggerDistanceContent(
                 valueRange = MinLongPressTriggerDelayMs.toFloat()..MaxLongPressTriggerDelayMs.toFloat(),
             )
         }
+        if (doubleTapTriggerDelayMs != null && onDoubleTapTriggerDelayMsChange != null) {
+            MyTextSlider(
+                value = doubleTapTriggerDelayMs.toFloat(),
+                onValueChange = onDoubleTapTriggerDelayMsChange,
+                text = stringResource(R.string.trigger_double_tap_delay),
+                valueDisplay = "${doubleTapTriggerDelayMs}ms",
+                valueRange = MinDoubleTapTriggerDelayMs.toFloat()..MaxDoubleTapTriggerDelayMs.toFloat(),
+            )
+        }
         MyTextSlider(
             value = longSlideTriggerDistance.toFloat(),
             onValueChange = onLongSlideTriggerDistanceChange,
@@ -79,18 +93,19 @@ fun GestureSlideTriggerDistanceContent(
             valueDisplay = "${longSlideTriggerDistance}px",
             valueRange = longSlideTriggerDistanceRange,
         )
-        ExpressiveSwitchItem(
-            onCheckedChange = onLongSlideTriggerImmediatelyChange,
-            checked = longSlideTriggerImmediately,
-            title = stringResource(R.string.long_slide_trigger_immediately),
-            subtitle = stringResource(R.string.long_slide_trigger_immediately_hint),
+        MyTextSlider(
+            value = slideHoldTriggerDelayMs.toFloat(),
+            onValueChange = onSlideHoldTriggerDelayMsChange,
+            text = stringResource(R.string.trigger_slide_hold_delay),
+            valueDisplay = "${slideHoldTriggerDelayMs}ms",
+            valueRange = MinHoldTriggerDelayMs.toFloat()..MaxHoldTriggerDelayMs.toFloat(),
         )
         MyTextSlider(
-            value = longSlideTriggerDelayMs.toFloat(),
-            onValueChange = onLongSlideTriggerDelayMsChange,
-            text = stringResource(R.string.trigger_long_slide_delay),
-            valueDisplay = "${longSlideTriggerDelayMs}ms",
-            valueRange = MinLongSlideTriggerDelayMs.toFloat()..MaxLongSlideTriggerDelayMs.toFloat(),
+            value = longSlideHoldTriggerDelayMs.toFloat(),
+            onValueChange = onLongSlideHoldTriggerDelayMsChange,
+            text = stringResource(R.string.trigger_long_slide_hold_delay),
+            valueDisplay = "${longSlideHoldTriggerDelayMs}ms",
+            valueRange = MinHoldTriggerDelayMs.toFloat()..MaxHoldTriggerDelayMs.toFloat(),
         )
     }
     if (scrollState != null) {

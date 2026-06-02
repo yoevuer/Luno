@@ -104,6 +104,8 @@
     <string name="lock_screen">Lock Screen</string>
     <string name="launcher">Launcher</string>
     <string name="slide_action">Short Slide</string>
+    <string name="slide_hold_action">Short Slide Hold</string>
+    <string name="slide_hold_subtitle">Trigger after holding past the short-slide distance</string>
     <string name="gesture_angles">Gesture Angles</string>
     <string name="gesture_button_angles_hint">Adjust the detection range for each slide direction of this gesture button</string>
     <string name="gesture_button_vibration">Vibration</string>
@@ -113,6 +115,9 @@
     <string name="trigger_slide_distance">Slide Trigger Distance</string>
     <string name="trigger_long_slide_distance">Long Slide Trigger Distance</string>
     <string name="trigger_long_press_delay">Long Press Trigger Delay</string>
+    <string name="trigger_double_tap_delay">Double Tap Wait Time</string>
+    <string name="trigger_slide_hold_delay">Short Slide Hold Time</string>
+    <string name="trigger_long_slide_hold_delay">Long Slide Hold Time</string>
     <string name="trigger_long_slide_delay">Long Slide Extra Delay</string>
     <string name="trigger_sub_gesture_distance">Sub-gesture Trigger Distance</string>
     <string name="sub_gesture_vibration">Sub-gesture Vibration</string>
@@ -122,6 +127,8 @@
     <string name="top">Top</string>
     <string name="bottom">Bottom</string>
     <string name="long_slide_action">Long Slide</string>
+    <string name="long_slide_hold_action">Long Slide Hold</string>
+    <string name="long_slide_hold_subtitle">Trigger after holding past the long-slide distance</string>
     <string name="long_slide_trigger_immediately">Trigger Immediately</string>
     <string name="long_slide_trigger_immediately_hint">Trigger the action as soon as the gesture is recognized, rather than waiting for lift</string>
     <string name="long_slide_trigger_delay_ms">Long Slide Trigger Delay</string>
@@ -158,6 +165,7 @@
     <string name="cancel">Cancel</string>
     <string name="confirm">Confirm</string>
     <string name="done">Done</string>
+    <string name="double_tap_action">Double Tap</string>
     <string name="reorder">Reorder</string>
     <string name="done_reorder">Done Reordering</string>
     <string name="reset">Reset</string>

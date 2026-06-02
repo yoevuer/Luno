@@ -92,13 +92,18 @@ private fun countReferences(
     }
     buttons.forEach { button ->
         button.slideActions.actions.values.flatten().forEach { add(it); add(it.longPressAction) }
+        button.slideHoldActions.actions.values.flatten().forEach { add(it); add(it.longPressAction) }
         button.longSlideActions.actions.values.flatten().forEach { add(it); add(it.longPressAction) }
+        button.longSlideHoldActions.actions.values.flatten().forEach { add(it); add(it.longPressAction) }
         button.tapActions.forEach { add(it); add(it.longPressAction) }
+        button.doubleTapActions.forEach { add(it); add(it.longPressAction) }
         button.longPressActions.forEach { add(it); add(it.longPressAction) }
     }
     subGestures.forEach { gesture ->
         gesture.slideActions.actions.values.flatten().forEach { add(it); add(it.longPressAction) }
+        gesture.slideHoldActions.actions.values.flatten().forEach { add(it); add(it.longPressAction) }
         gesture.longSlideActions.actions.values.flatten().forEach { add(it); add(it.longPressAction) }
+        gesture.longSlideHoldActions.actions.values.flatten().forEach { add(it); add(it.longPressAction) }
     }
     return counts
 }

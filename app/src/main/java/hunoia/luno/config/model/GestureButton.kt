@@ -30,16 +30,22 @@ object GestureButtonDefaults {
         mapOf(GestureDirection.Right to Action.toList(ActionFacade.BACK))
     )
     val LongSlideActions = DirectionActions()
+    val SlideHoldActions = DirectionActions()
+    val LongSlideHoldActions = DirectionActions()
     val LongSlideActionPanelStyles = LongSlideActionPanelStyles()
     val TapActions = listOf(GestureActionsDefaults.ActionNone)
+    val DoubleTapActions = listOf(GestureActionsDefaults.ActionNone)
     val LongPressActions = listOf(GestureActionsDefaults.ActionNone)
     const val Color = android.graphics.Color.TRANSPARENT
     const val MirrorHorizontal = true
     val SlideTriggerDistance = DensityProvider.dp2px(30f)
     val LongSlideTriggerDistance = DensityProvider.dp2px(100f)
     const val LongPressTriggerDelayMs = 250L
+    const val DoubleTapTriggerDelayMs = 300L
     const val LongSlideTriggerImmediately = true
     const val LongSlideTriggerDelayMs = 100L
+    const val SlideHoldTriggerDelayMs = 120L
+    const val LongSlideHoldTriggerDelayMs = 120L
     const val SlideVibrate = true
     const val LongSlideVibrate = true
     const val TapVibrate = true
@@ -62,11 +68,14 @@ data class GestureButton(
     val bounds: GestureButtonBounds = GestureButtonDefaults.Bounds,
     val enabled: Boolean = GestureButtonDefaults.Enabled,
     val slideActions: DirectionActions = GestureButtonDefaults.SlideActions,
+    val slideHoldActions: DirectionActions = GestureButtonDefaults.SlideHoldActions,
     val longSlideActions: DirectionActions = GestureButtonDefaults.LongSlideActions,
+    val longSlideHoldActions: DirectionActions = GestureButtonDefaults.LongSlideHoldActions,
     val longSlideActionPanelStyles: LongSlideActionPanelStyles = GestureButtonDefaults.LongSlideActionPanelStyles,
     val angle: GestureButtonAngle = GestureButtonAngle(),
     val actionSettingsOverride: GestureButtonActionSettingsOverride = GestureButtonActionSettingsOverride(),
     val tapActions: List<Action> = GestureButtonDefaults.TapActions,
+    val doubleTapActions: List<Action> = GestureButtonDefaults.DoubleTapActions,
     val longPressActions: List<Action> = GestureButtonDefaults.LongPressActions,
     val color: Int = GestureButtonDefaults.Color,
     val mirrorHorizontal: Boolean = GestureButtonDefaults.MirrorHorizontal,
@@ -80,8 +89,11 @@ data class GestureButton(
     val slideTriggerDistance: Int = GestureButtonDefaults.SlideTriggerDistance,
     val longSlideTriggerDistance: Int = GestureButtonDefaults.LongSlideTriggerDistance,
     val longPressTriggerDelayMs: Long = GestureButtonDefaults.LongPressTriggerDelayMs,
+    val doubleTapTriggerDelayMs: Long = GestureButtonDefaults.DoubleTapTriggerDelayMs,
     val longSlideTriggerImmediately: Boolean = GestureButtonDefaults.LongSlideTriggerImmediately,
     val longSlideTriggerDelayMs: Long = GestureButtonDefaults.LongSlideTriggerDelayMs,
+    val slideHoldTriggerDelayMs: Long = GestureButtonDefaults.SlideHoldTriggerDelayMs,
+    val longSlideHoldTriggerDelayMs: Long = GestureButtonDefaults.LongSlideHoldTriggerDelayMs,
     val fitSoftKeyboard: Boolean = GestureButtonDefaults.FitSoftKeyboard,
     val isPreciseSlideType: Boolean = GestureButtonDefaults.IsPreciseSlideType,
     val hideLandscape: Boolean = GestureButtonDefaults.HideLandscape,

@@ -59,8 +59,14 @@ class SubGestureSettingsVM(savedStateHandle: SavedStateHandle) : BaseComposeVM<S
                 slideActions = original.slideActions.copy(
                     actions = original.slideActions.actions.mapKeys { (direction, _) -> direction.mirrorHorizontal() }
                 ),
+                slideHoldActions = original.slideHoldActions.copy(
+                    actions = original.slideHoldActions.actions.mapKeys { (direction, _) -> direction.mirrorHorizontal() }
+                ),
                 longSlideActions = original.longSlideActions.copy(
                     actions = original.longSlideActions.actions.mapKeys { (direction, _) -> direction.mirrorHorizontal() }
+                ),
+                longSlideHoldActions = original.longSlideHoldActions.copy(
+                    actions = original.longSlideHoldActions.actions.mapKeys { (direction, _) -> direction.mirrorHorizontal() }
                 ),
                 longSlideActionPanelStyles = original.longSlideActionPanelStyles.copy(
                     styles = original.longSlideActionPanelStyles.styles.mapKeys { (direction, _) -> direction.mirrorHorizontal() }
@@ -143,8 +149,8 @@ class SubGestureSettingsVM(savedStateHandle: SavedStateHandle) : BaseComposeVM<S
     fun onSubCustomVibrationMsChange(value: Float) = updateSubGesture { copy(customVibrationMs = value.toLong()) }
     fun onSubTriggerDistanceChange(value: Float) = updateSubGesture { copy(triggerDistance = value.toInt()) }
     fun onSubLongSlideTriggerDistanceChange(value: Float) = updateSubGesture { copy(longSlideTriggerDistance = value.toInt()) }
-    fun onSubLongSlideTriggerImmediatelyChange(value: Boolean) = updateSubGesture { copy(longSlideTriggerImmediately = value) }
-    fun onSubLongSlideTriggerDelayMsChange(value: Float) = updateSubGesture { copy(longSlideTriggerDelayMs = value.toLong()) }
+    fun onSubSlideHoldTriggerDelayMsChange(value: Float) = updateSubGesture { copy(slideHoldTriggerDelayMs = value.toLong()) }
+    fun onSubLongSlideHoldTriggerDelayMsChange(value: Float) = updateSubGesture { copy(longSlideHoldTriggerDelayMs = value.toLong()) }
     fun onSubTimeoutMsChange(value: Float) = updateSubGesture { copy(timeoutMs = value.toLong()) }
 
     fun updateLongSlideActionPanelStyle(direction: GestureDirection, style: ActionPanelStyles) {

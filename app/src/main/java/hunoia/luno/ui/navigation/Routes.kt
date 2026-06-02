@@ -2,6 +2,7 @@ package hunoia.luno.ui.navigation
 
 import androidx.annotation.Keep
 import hunoia.luno.config.model.GestureDirection
+import hunoia.luno.config.model.GestureTriggerType
 import kotlinx.serialization.Serializable
 
 
@@ -11,9 +12,7 @@ import kotlinx.serialization.Serializable
 data class ActionSelect(
     val gestureButtonId: String,
     val direction: GestureDirection,
-    val isLongSlide: Boolean,
-    val isTap: Boolean = false,
-    val isLongPress: Boolean = false,
+    val triggerType: GestureTriggerType = GestureTriggerType.Slide,
     val subGestureId: String = "",
 )
 

@@ -12,6 +12,7 @@ import hunoia.luno.R
 import hunoia.luno.config.model.ActionPanelStyles
 import hunoia.luno.config.model.GestureButton
 import hunoia.luno.config.model.GestureDirection
+import hunoia.luno.config.model.GestureTriggerType
 import hunoia.luno.gesture.GestureFacade
 import hunoia.luno.ui.component.ExpressiveCard
 import hunoia.luno.ui.component.ExpressiveRow
@@ -50,7 +51,7 @@ fun GestureButtonSlideActionsCard(
                     ActionSelect(
                         gestureButtonId = gestureButton.id,
                         direction = direction,
-                        isLongSlide = false,
+                        triggerType = GestureTriggerType.Slide,
                     )
                 )
             },
@@ -79,7 +80,7 @@ fun GestureButtonLongSlideActionsCard(
                     ActionSelect(
                         gestureButtonId = gestureButton.id,
                         direction = direction,
-                        isLongSlide = true,
+                        triggerType = GestureTriggerType.LongSlide,
                     )
                 )
             },
@@ -147,8 +148,7 @@ fun GestureButtonTapActionsCard(
                     ActionSelect(
                         gestureButtonId = gestureButton.id,
                         direction = GestureDirection.Right,
-                        isLongSlide = false,
-                        isTap = true,
+                        triggerType = GestureTriggerType.Tap,
                     )
                 )
             },
@@ -163,8 +163,22 @@ fun GestureButtonTapActionsCard(
                     ActionSelect(
                         gestureButtonId = gestureButton.id,
                         direction = GestureDirection.Right,
-                        isLongSlide = false,
-                        isLongPress = true,
+                        triggerType = GestureTriggerType.DoubleTap,
+                    )
+                )
+            },
+            text = stringResource(id = R.string.double_tap_action),
+            secondaryText = gestureButton.doubleTapActions.actionTextCompose(),
+            secondaryTextColor = MaterialTheme.colorScheme.primary,
+            icon = { Icon(Icons.Default.Adjust, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+        )
+        ExpressiveRow(
+            onClick = {
+                onNavToActionSelect(
+                    ActionSelect(
+                        gestureButtonId = gestureButton.id,
+                        direction = GestureDirection.Right,
+                        triggerType = GestureTriggerType.LongPress,
                     )
                 )
             },
@@ -172,6 +186,63 @@ fun GestureButtonTapActionsCard(
             secondaryText = gestureButton.longPressActions.actionTextCompose(),
             secondaryTextColor = MaterialTheme.colorScheme.primary,
             icon = { Icon(Icons.Default.Adjust, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+        )
+    }
+}
+
+@Composable
+fun GestureButtonSlideHoldActionsCard(
+    gestureButton: GestureButton,
+    onNavToActionSelect: (ActionSelect) -> Unit,
+) {
+    ExpressiveCard(
+        icon = Icons.Default.Swipe,
+        title = stringResource(id = R.string.slide_hold_action),
+        subtitle = stringResource(id = R.string.slide_hold_subtitle),
+        onClick = {},
+    ) {
+        SlideActionRows(
+            styleGestureButton = gestureButton,
+            actionsText = { direction -> gestureButton.slideHoldActions.actionsBy(direction).actionTextCompose() },
+            onDirectionClick = { direction ->
+                onNavToActionSelect(
+                    ActionSelect(
+                        gestureButtonId = gestureButton.id,
+                        direction = direction,
+                        triggerType = GestureTriggerType.SlideHold,
+                    )
+                )
+            },
+        )
+    }
+}
+
+@Composable
+fun GestureButtonLongSlideHoldActionsCard(
+    gestureButton: GestureButton,
+    onNavToActionSelect: (ActionSelect) -> Unit,
+    onStyleSelect: (GestureDirection) -> Unit,
+) {
+    ExpressiveCard(
+        icon = Icons.Default.Gesture,
+        title = stringResource(id = R.string.long_slide_hold_action),
+        subtitle = stringResource(id = R.string.long_slide_hold_subtitle),
+        onClick = {},
+    ) {
+        LongSlideActionRows(
+            styleGestureButton = gestureButton,
+            actionsText = { direction -> gestureButton.longSlideHoldActions.actionsBy(direction).actionTextCompose() },
+            currentStyle = { direction -> GestureFacade.styleBy(gestureButton.longSlideActionPanelStyles, direction) },
+            onDirectionClick = { direction ->
+                onNavToActionSelect(
+                    ActionSelect(
+                        gestureButtonId = gestureButton.id,
+                        direction = direction,
+                        triggerType = GestureTriggerType.LongSlideHold,
+                    )
+                )
+            },
+            onStyleSelect = onStyleSelect,
         )
     }
 }

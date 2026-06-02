@@ -61,6 +61,10 @@ class ActionPanelState(private val coroutineScope: CoroutineScope) : LongSlideSt
         this.buttonColor = buttonColor
     }
 
+    fun onSelectStart(offset: Offset) {
+        finger = offset
+    }
+
     fun done(): Action {
         val action = selectedAction
         val triggerType = triggerType

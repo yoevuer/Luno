@@ -184,8 +184,9 @@ class GestureButtonSettingsVM(savedStateHandle: SavedStateHandle) : BaseComposeV
     fun onSlideTriggerDistanceChange(value: Float) = updateButton { copy(slideTriggerDistance = value.toInt()) }
     fun onLongSlideTriggerDistanceChange(value: Float) = updateButton { copy(longSlideTriggerDistance = value.toInt()) }
     fun onLongPressTriggerDelayMsChange(value: Float) = updateButton { copy(longPressTriggerDelayMs = value.toLong()) }
-    fun onLongSlideTriggerImmediatelyChange(value: Boolean) = updateButton { copy(longSlideTriggerImmediately = value) }
-    fun onLongSlideTriggerDelayMsChange(value: Float) = updateButton { copy(longSlideTriggerDelayMs = value.toLong()) }
+    fun onDoubleTapTriggerDelayMsChange(value: Float) = updateButton { copy(doubleTapTriggerDelayMs = value.toLong()) }
+    fun onSlideHoldTriggerDelayMsChange(value: Float) = updateButton { copy(slideHoldTriggerDelayMs = value.toLong()) }
+    fun onLongSlideHoldTriggerDelayMsChange(value: Float) = updateButton { copy(longSlideHoldTriggerDelayMs = value.toLong()) }
 
     fun onGestureButtonMirrorHorizontalChange(value: Boolean) {
         updateUiState {

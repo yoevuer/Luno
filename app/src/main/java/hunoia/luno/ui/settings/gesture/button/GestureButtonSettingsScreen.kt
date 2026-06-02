@@ -174,7 +174,18 @@ fun GestureButtonSettingsScreen(
                             onNavToActionSelect = onNavToActionSelect,
                         )
 
+                        GestureButtonSlideHoldActionsCard(
+                            gestureButton = gestureButton,
+                            onNavToActionSelect = onNavToActionSelect,
+                        )
+
                         GestureButtonLongSlideActionsCard(
+                            gestureButton = gestureButton,
+                            onNavToActionSelect = onNavToActionSelect,
+                            onStyleSelect = { showStyleSelectFor = it },
+                        )
+
+                        GestureButtonLongSlideHoldActionsCard(
                             gestureButton = gestureButton,
                             onNavToActionSelect = onNavToActionSelect,
                             onStyleSelect = { showStyleSelectFor = it },

@@ -12,6 +12,7 @@ import hunoia.luno.config.model.ActionLibraryRefData
 import hunoia.luno.config.model.ActionLibraryType
 import hunoia.luno.config.model.SubGesture
 import hunoia.luno.config.model.GestureDirection
+import hunoia.luno.config.model.GestureTriggerType
 import hunoia.luno.config.model.actionLibraryRefId
 import hunoia.luno.core.AppContext
 import hunoia.luno.core.JsonSerializer
@@ -105,10 +106,12 @@ internal fun canShortcutInfoEnabled(
 
 internal fun createTitle(actionSelect: ActionSelect): String {
     val context = AppContext.get()
-    if (actionSelect.isTap) {
-        return context.getString(R.string.tap_action)
+    when (actionSelect.triggerType) {
+        GestureTriggerType.Tap -> return context.getString(R.string.tap_action)
+        GestureTriggerType.DoubleTap -> return context.getString(R.string.double_tap_action)
+        GestureTriggerType.LongPress -> return context.getString(R.string.long_press)
+        else -> Unit
     }
-    if (actionSelect.isLongPress) return context.getString(R.string.long_press)
     val str1 = when (actionSelect.direction) {
         GestureDirection.Left -> context.getString(R.string.slide_to_left)
         GestureDirection.UpLeft -> context.getString(R.string.slide_to_top_left)
@@ -119,9 +122,12 @@ internal fun createTitle(actionSelect: ActionSelect): String {
         GestureDirection.Down -> context.getString(R.string.slide_to_bottom)
         GestureDirection.DownLeft -> context.getString(R.string.slide_to_bottom_left)
     }
-    val str2 = when (actionSelect.isLongSlide) {
-        true -> context.getString(R.string.long1)
-        else -> context.getString(R.string.short1)
+    val str2 = when (actionSelect.triggerType) {
+        GestureTriggerType.Slide -> context.getString(R.string.short1)
+        GestureTriggerType.SlideHold -> context.getString(R.string.slide_hold_action)
+        GestureTriggerType.LongSlide -> context.getString(R.string.long1)
+        GestureTriggerType.LongSlideHold -> context.getString(R.string.long_slide_hold_action)
+        else -> ""
     }
     return "$str1($str2)"
 }
@@ -177,9 +183,6 @@ internal fun assembleDataTransform(state: UiState): UiState {
                     )
                 }
         }
-    if (state.selectSingle) {
-        return state.copy(actions = allActions)
-    }
     val allWithoutNone = allActions.apply { removeAt(0) }
     val list1 = mutableListOf<Action>()
     val list2 = mutableListOf<Action>()
@@ -195,29 +198,17 @@ internal fun assembleDataTransform(state: UiState): UiState {
 }
 
 internal fun selectActionTransform(state: UiState, action: Action, selected: Boolean): UiState {
-    val record = if (state.selectSingle && selected) {
-        state.selectedRecord.copy(list = listOf(action))
-    } else {
-        state.selectedRecord.selectAction(action, selected)
-    }
+    val record = state.selectedRecord.selectAction(action, selected)
     return state.copy(selectedRecord = record)
 }
 
 internal fun selectAppInfoTransform(state: UiState, appInfo: AppInfo, selected: Boolean): UiState {
-    val record = if (state.selectSingle && selected) {
-        state.selectedRecord.copy(list = listOf(appInfo.toAction()))
-    } else {
-        state.selectedRecord.selectAppInfo(appInfo, selected)
-    }
+    val record = state.selectedRecord.selectAppInfo(appInfo, selected)
     return state.copy(selectedRecord = record)
 }
 
 internal fun selectShortcutInfoTransform(state: UiState, shortcut: LauncherInfo.ShortcutInfo, selected: Boolean): UiState {
-    val record = if (state.selectSingle && selected) {
-        state.selectedRecord.copy(list = listOf(shortcut.toAction()))
-    } else {
-        state.selectedRecord.selectShortcutInfo(shortcut, selected)
-    }
+    val record = state.selectedRecord.selectShortcutInfo(shortcut, selected)
     return state.copy(selectedRecord = record)
 }
 

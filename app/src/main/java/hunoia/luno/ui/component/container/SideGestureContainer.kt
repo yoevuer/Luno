@@ -23,9 +23,11 @@ import hunoia.luno.config.model.GestureSettings
 import hunoia.luno.config.model.GestureButton
 import hunoia.luno.config.model.GestureButtonActionSettingsOverride
 import hunoia.luno.config.model.GestureDirection
+import hunoia.luno.config.model.GestureTriggerType
 import hunoia.luno.config.model.SubGestureSettings
 import hunoia.luno.config.model.effectiveFor
 import hunoia.luno.gesture.DragGestureHandler
+import hunoia.luno.gesture.GestureResolvedActions
 import hunoia.luno.gesture.GestureFacade
 import hunoia.luno.ui.component.panel.ActionPanel
 import hunoia.luno.ui.component.panel.rememberActionPanelState
@@ -170,7 +172,7 @@ fun SideGestureContainer(
         val touchPosition = resolvedActions.touchPosition.takeIf { it.x.isFinite() && it.y.isFinite() }
             ?: sideGestureState.finger.takeIf { it.x.isFinite() && it.y.isFinite() }
             ?: Offset.Zero
-        val panelStyle = if (resolvedActions.isLongSlide) {
+        val panelStyle = if (resolvedActions.triggerType == GestureTriggerType.LongSlide || resolvedActions.triggerType == GestureTriggerType.LongSlideHold) {
             GestureFacade.styleBy(resolvedActions.subGesture.longSlideActionPanelStyles, resolvedActions.direction).value
         } else {
             actionPanelStyle
@@ -197,15 +199,43 @@ fun SideGestureContainer(
         }
     }
 
-    SideEffect {
-        sideGestureState.onLongPress = { action ->
-            handleResolvedAction(action, sideGestureState.button, sideGestureState.finger)
+    fun handleGestureResolvedActions(resolvedActions: GestureResolvedActions) {
+        runGestureActions(
+            actions = resolvedActions.actions,
+            direction = resolvedActions.direction,
+            touchPosition = resolvedActions.touchPosition,
+            sourceButton = resolvedActions.button,
+            panelStyle = if (resolvedActions.triggerType == GestureTriggerType.LongSlide || resolvedActions.triggerType == GestureTriggerType.LongSlideHold) {
+                GestureFacade.styleBy(resolvedActions.button.longSlideActionPanelStyles, resolvedActions.actionDirection).value
+            } else {
+                actionPanelStyle
+            },
+            panelColor = resolvedActions.button.color,
+            onPanelStarted = {
+                if (resolvedActions.triggerType == GestureTriggerType.LongPress ||
+                    resolvedActions.triggerType == GestureTriggerType.SlideHold ||
+                    resolvedActions.triggerType == GestureTriggerType.LongSlideHold
+                ) {
+                    sideGestureState.cancel()
+                }
+            },
+        ) {
             sideGestureState.cancel()
+        }
+    }
+
+    SideEffect {
+        sideGestureState.onResolved = { resolvedActions ->
+            handleGestureResolvedActions(resolvedActions)
         }
     }
 
     DragGestureHandler(
         onDragStart = onDragStart@{ offset ->
+            if (actionPanelState.visible) {
+                actionPanelState.onSelectStart(offset)
+                return@onDragStart
+            }
             if (subGestureState.isActive) {
                 subGestureState.onDragStart(offset)
                 return@onDragStart
@@ -237,26 +267,12 @@ fun SideGestureContainer(
                 return@onDrag
             }
             if (!sideGestureState.isCanceled) {
-                val actions = sideGestureState.onDrag(dragAmount)
+                val resolvedActions = sideGestureState.onDrag(dragAmount)
                 val button = sideGestureState.button
-                if (button != null && actions != null) {
-                    if (actions.isNotEmpty()) {
-                        runGestureActions(
-                            actions = actions,
-                            direction = sideGestureState.triggerDirection,
-                            touchPosition = sideGestureState.finger,
-                            sourceButton = button,
-                            panelStyle = button.longSlideActionPanelStyles.let { GestureFacade.styleBy(it, sideGestureState.actionDirection) }.value,
-                            panelColor = button.color,
-                            onPanelStarted = {
-                                sideGestureState.cancel()
-                            },
-                        ) {
-                            sideGestureState.cancel()
-                        }
-                    }
-                } else {
+                if (button == null) {
                     sideGestureState.cancel()
+                } else if (resolvedActions != null) {
+                    handleGestureResolvedActions(resolvedActions)
                 }
             }
         },
@@ -310,10 +326,9 @@ fun SideGestureContainer(
                 }
             }
             if (!sideGestureState.isCanceled) {
-                val touchPosition = sideGestureState.finger
-                val sourceButton = sideGestureState.button
-                val action = sideGestureState.onDragEnd()
-                handleResolvedAction(action, sourceButton, touchPosition)
+                sideGestureState.onDragEnd()?.let { resolvedActions ->
+                    handleGestureResolvedActions(resolvedActions)
+                }
             }
         },
         onDragCancel = onDragCancel@{

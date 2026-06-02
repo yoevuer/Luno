@@ -203,8 +203,11 @@ object ConfigProvider {
 
     private fun GestureButton.cleanActionLibraryRef(entryId: String): GestureButton = copy(
         slideActions = slideActions.cleanActionLibraryRef(entryId),
+        slideHoldActions = slideHoldActions.cleanActionLibraryRef(entryId),
         longSlideActions = longSlideActions.cleanActionLibraryRef(entryId),
+        longSlideHoldActions = longSlideHoldActions.cleanActionLibraryRef(entryId),
         tapActions = tapActions.cleanActionLibraryRef(entryId),
+        doubleTapActions = doubleTapActions.cleanActionLibraryRef(entryId),
         longPressActions = longPressActions.cleanActionLibraryRef(entryId),
     )
 
@@ -222,7 +225,9 @@ object ConfigProvider {
     private fun SubGesture.cleanActionLibraryRef(entryId: String): SubGesture {
         return copy(
             slideActions = slideActions.cleanActionLibraryRef(entryId),
+            slideHoldActions = slideHoldActions.cleanActionLibraryRef(entryId),
             longSlideActions = longSlideActions.cleanActionLibraryRef(entryId),
+            longSlideHoldActions = longSlideHoldActions.cleanActionLibraryRef(entryId),
         )
     }
 

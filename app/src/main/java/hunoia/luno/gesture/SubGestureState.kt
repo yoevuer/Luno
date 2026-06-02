@@ -10,6 +10,7 @@ import hunoia.luno.action.api.ActionFacade
 import hunoia.luno.action.payload.SubGestureActionData
 import hunoia.luno.config.model.Action
 import hunoia.luno.config.model.GestureDirection
+import hunoia.luno.config.model.GestureTriggerType
 import hunoia.luno.config.model.SubGesture
 import hunoia.luno.config.model.SubGestureSettings
 import hunoia.luno.core.JsonSerializer
@@ -24,7 +25,7 @@ data class SubGestureResolvedActions(
     val subGesture: SubGesture,
     val direction: GestureDirection,
     val actions: List<Action>,
-    val isLongSlide: Boolean,
+    val triggerType: GestureTriggerType,
     val touchPosition: Offset,
 )
 
@@ -46,8 +47,10 @@ class SubGestureState(
     var lastResolvedActionSubGesture by mutableStateOf<SubGesture?>(null)
         private set
     private var timeoutJob by mutableStateOf<Job?>(null)
-    private var longSlideFirstTriggerMs = 0L
+    private var slideHoldFirstTriggerMs = 0L
+    private var longSlideHoldFirstTriggerMs = 0L
     private var slideVibrationFlags = false
+    private var directTriggered = false
 
     val isActive: Boolean get() = activeSubGesture != null
 
@@ -63,8 +66,10 @@ class SubGestureState(
         origin = validOrUnspecified(touchPosition)
         finger = origin
         subGestureAccum = Offset.Zero
-        longSlideFirstTriggerMs = 0L
+        slideHoldFirstTriggerMs = 0L
+        longSlideHoldFirstTriggerMs = 0L
         slideVibrationFlags = false
+        directTriggered = false
         subGestureDepth += 1
         scheduleTimeout()
         onModeChanged(true, origin, target.captureRadius)
@@ -76,8 +81,10 @@ class SubGestureState(
         origin = validOrUnspecified(offset)
         finger = origin
         subGestureAccum = Offset.Zero
-        longSlideFirstTriggerMs = 0L
+        slideHoldFirstTriggerMs = 0L
+        longSlideHoldFirstTriggerMs = 0L
         slideVibrationFlags = false
+        directTriggered = false
         restartTimeout()
         return true
     }
@@ -89,19 +96,36 @@ class SubGestureState(
         val sg = activeSubGesture!!
         val distance = kotlin.math.hypot(subGestureAccum.x, subGestureAccum.y)
         val canReachLongSlide = distance >= sg.effectiveLongSlideTriggerDistance
+        val canReachSlide = distance >= sg.triggerDistance
         if (canReachLongSlide) {
-            if (longSlideFirstTriggerMs == 0L) {
-                longSlideFirstTriggerMs = SystemClock.uptimeMillis()
-            } else if (SystemClock.uptimeMillis() - longSlideFirstTriggerMs >= sg.longSlideTriggerDelayMs) {
-                if (sg.longSlideTriggerImmediately) {
-                    val direction = sg.angle.directionOf(subGestureAccum)
-                    return resolve(sg, direction, isLongSlide = true)
+            if (longSlideHoldFirstTriggerMs == 0L) {
+                longSlideHoldFirstTriggerMs = SystemClock.uptimeMillis()
+            } else if (!directTriggered && SystemClock.uptimeMillis() - longSlideHoldFirstTriggerMs >= sg.longSlideHoldTriggerDelayMs) {
+                val direction = sg.angle.directionOf(subGestureAccum)
+                val actions = sg.longSlideHoldActionsFor(direction)
+                if (actions.hasMeaningfulActions()) {
+                    directTriggered = true
+                    return resolve(sg, direction, GestureTriggerType.LongSlideHold)
                 }
             }
         } else {
-            longSlideFirstTriggerMs = 0L
+            longSlideHoldFirstTriggerMs = 0L
         }
-        if (sg.vibrateImmediately && !slideVibrationFlags && distance >= sg.triggerDistance) {
+        if (canReachSlide && !canReachLongSlide) {
+            if (slideHoldFirstTriggerMs == 0L) {
+                slideHoldFirstTriggerMs = SystemClock.uptimeMillis()
+            } else if (!directTriggered && SystemClock.uptimeMillis() - slideHoldFirstTriggerMs >= sg.slideHoldTriggerDelayMs) {
+                val direction = sg.angle.directionOf(subGestureAccum)
+                val actions = sg.slideHoldActionsFor(direction)
+                if (actions.hasMeaningfulActions()) {
+                    directTriggered = true
+                    return resolve(sg, direction, GestureTriggerType.SlideHold)
+                }
+            }
+        } else {
+            slideHoldFirstTriggerMs = 0L
+        }
+        if (sg.vibrateImmediately && !slideVibrationFlags && canReachSlide) {
             slideVibrationFlags = true
             sg.tryVibrateForSlide()
         }
@@ -110,16 +134,17 @@ class SubGestureState(
 
     fun onDragEnd(): SubGestureResolvedActions? {
         if (!isActive) return null
+        if (directTriggered) {
+            clear()
+            return null
+        }
         val sg = activeSubGesture!!
         val distance = kotlin.math.hypot(subGestureAccum.x, subGestureAccum.y)
         val direction = sg.angle.directionOf(subGestureAccum)
-        if (!sg.longSlideTriggerImmediately &&
-            distance >= sg.effectiveLongSlideTriggerDistance &&
-            SystemClock.uptimeMillis() - longSlideFirstTriggerMs >= sg.longSlideTriggerDelayMs
-        ) {
-            return resolve(sg, direction, isLongSlide = true)
+        if (distance >= sg.effectiveLongSlideTriggerDistance && sg.longSlideActionsFor(direction).hasMeaningfulActions()) {
+            return resolve(sg, direction, GestureTriggerType.LongSlide)
         } else if (distance >= sg.triggerDistance) {
-            return resolve(sg, direction, isLongSlide = false)
+            return resolve(sg, direction, GestureTriggerType.Slide)
         } else {
             subGestureAccum = Offset.Zero
             return null
@@ -137,8 +162,10 @@ class SubGestureState(
         origin = Offset.Unspecified
         subGestureAccum = Offset.Zero
         finger = Offset.Unspecified
-        longSlideFirstTriggerMs = 0L
+        slideHoldFirstTriggerMs = 0L
+        longSlideHoldFirstTriggerMs = 0L
         slideVibrationFlags = false
+        directTriggered = false
         subGestureDepth = 0
         timeoutJob?.cancel()
         timeoutJob = null
@@ -161,12 +188,14 @@ class SubGestureState(
     private fun resolve(
         subGesture: SubGesture,
         direction: GestureDirection,
-        isLongSlide: Boolean,
+        triggerType: GestureTriggerType,
     ): SubGestureResolvedActions {
-        val actions = if (isLongSlide) {
-            subGesture.longSlideActionsFor(direction)
-        } else {
-            subGesture.slideActionsFor(direction)
+        val actions = when (triggerType) {
+            GestureTriggerType.Slide -> subGesture.slideActionsFor(direction)
+            GestureTriggerType.SlideHold -> subGesture.slideHoldActionsFor(direction)
+            GestureTriggerType.LongSlide -> subGesture.longSlideActionsFor(direction)
+            GestureTriggerType.LongSlideHold -> subGesture.longSlideHoldActionsFor(direction)
+            else -> emptyList()
         }
         lastResolvedActionSubGesture = subGesture
         activeSubGesture = null
@@ -180,15 +209,17 @@ class SubGestureState(
         origin = Offset.Unspecified
         subGestureAccum = Offset.Zero
         finger = Offset.Unspecified
-        longSlideFirstTriggerMs = 0L
-        if (isLongSlide) {
+        slideHoldFirstTriggerMs = 0L
+        longSlideHoldFirstTriggerMs = 0L
+        if (triggerType == GestureTriggerType.LongSlide || triggerType == GestureTriggerType.LongSlideHold) {
             subGesture.tryVibrateForLongSlide()
         } else if (!slideVibrationFlags) {
             subGesture.tryVibrateForSlide()
         }
         slideVibrationFlags = false
+        directTriggered = false
         onModeChanged(false, Offset.Unspecified, 0)
-        return SubGestureResolvedActions(subGesture, direction, actions, isLongSlide, touchPosition)
+        return SubGestureResolvedActions(subGesture, direction, actions, triggerType, touchPosition)
     }
 
     private fun Offset.hasFiniteCoordinates(): Boolean = x.isFinite() && y.isFinite()
@@ -196,4 +227,6 @@ class SubGestureState(
     private fun validOrUnspecified(offset: Offset): Offset {
         return if (offset.hasFiniteCoordinates()) offset else Offset.Unspecified
     }
+
+    private fun List<Action>.hasMeaningfulActions(): Boolean = any { it != Action.NONE }
 }

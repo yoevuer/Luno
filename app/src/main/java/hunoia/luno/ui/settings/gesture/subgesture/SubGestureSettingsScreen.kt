@@ -40,6 +40,7 @@ import hunoia.luno.config.model.GestureButton
 import hunoia.luno.config.model.GestureDirection
 import hunoia.luno.config.defaults.SettingsUiDefaults.GestureButtonColorAlpha
 import hunoia.luno.config.model.SubGesture
+import hunoia.luno.config.model.GestureTriggerType
 import hunoia.luno.gesture.GestureFacade
 import hunoia.luno.ui.navigation.ActionSelect
 import hunoia.luno.ui.component.MyAlertDialog
@@ -239,7 +240,31 @@ fun SubGestureSettingsScreen(
                                     ActionSelect(
                                         gestureButtonId = "",
                                         direction = direction,
-                                        isLongSlide = false,
+                                        triggerType = GestureTriggerType.Slide,
+                                        subGestureId = gesture.id,
+                                    )
+                                )
+                        },
+                    )
+                }
+
+                ExpressiveCard(
+                    icon = Icons.Default.Swipe,
+                    title = stringResource(id = R.string.slide_hold_action),
+                    subtitle = stringResource(id = R.string.slide_hold_subtitle),
+                    onClick = {},
+                ) {
+                    SlideActionRows(
+                        styleGestureButton = styleGestureButton,
+                        actionsText = { direction ->
+                            gesture.slideHoldActionsFor(direction).actionTextCompose()
+                        },
+                        onDirectionClick = { direction ->
+                                onNavToActionSelect(
+                                    ActionSelect(
+                                        gestureButtonId = "",
+                                        direction = direction,
+                                        triggerType = GestureTriggerType.SlideHold,
                                         subGestureId = gesture.id,
                                     )
                                 )
@@ -266,7 +291,35 @@ fun SubGestureSettingsScreen(
                                     ActionSelect(
                                         gestureButtonId = "",
                                         direction = direction,
-                                        isLongSlide = true,
+                                        triggerType = GestureTriggerType.LongSlide,
+                                        subGestureId = gesture.id,
+                                    )
+                                )
+                        },
+                        onStyleSelect = { direction -> showStyleSelectFor = direction },
+                    )
+                }
+
+                ExpressiveCard(
+                    icon = Icons.Default.Gesture,
+                    title = stringResource(id = R.string.long_slide_hold_action),
+                    subtitle = stringResource(id = R.string.long_slide_hold_subtitle),
+                    onClick = {},
+                ) {
+                    LongSlideActionRows(
+                        styleGestureButton = styleGestureButton,
+                        actionsText = { direction ->
+                            gesture.longSlideHoldActionsFor(direction).actionTextCompose()
+                        },
+                        currentStyle = { direction ->
+                            GestureFacade.styleBy(gesture.longSlideActionPanelStyles, direction)
+                        },
+                        onDirectionClick = { direction ->
+                                onNavToActionSelect(
+                                    ActionSelect(
+                                        gestureButtonId = "",
+                                        direction = direction,
+                                        triggerType = GestureTriggerType.LongSlideHold,
                                         subGestureId = gesture.id,
                                     )
                                 )
@@ -372,10 +425,10 @@ private fun SubGestureTriggerDistanceContent(
             longSlideTriggerDistance = gesture.longSlideTriggerDistance,
             onLongSlideTriggerDistanceChange = vm::onSubLongSlideTriggerDistanceChange,
             longSlideTriggerDistanceRange = MinSubGestureLongSlideTriggerDistance.toFloat()..MaxSubGestureLongSlideTriggerDistance.toFloat(),
-            longSlideTriggerImmediately = gesture.longSlideTriggerImmediately,
-            onLongSlideTriggerImmediatelyChange = vm::onSubLongSlideTriggerImmediatelyChange,
-            longSlideTriggerDelayMs = gesture.longSlideTriggerDelayMs,
-            onLongSlideTriggerDelayMsChange = vm::onSubLongSlideTriggerDelayMsChange,
+            slideHoldTriggerDelayMs = gesture.slideHoldTriggerDelayMs,
+            onSlideHoldTriggerDelayMsChange = vm::onSubSlideHoldTriggerDelayMsChange,
+            longSlideHoldTriggerDelayMs = gesture.longSlideHoldTriggerDelayMs,
+            onLongSlideHoldTriggerDelayMsChange = vm::onSubLongSlideHoldTriggerDelayMsChange,
         )
         MyTextSlider(
             value = gesture.timeoutMs.toFloat(),
