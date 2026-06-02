@@ -1,8 +1,8 @@
-package hunoia.luno.service.runtime
+package hunoia.luno.runtime.volume
 
 import android.content.Context
-import hunoia.luno.config.model.ActionSettings
 import hunoia.luno.action.api.VolumeScrubOverlay
+import hunoia.luno.config.model.ActionSettings
 
 class VolumeScrubRuntime(
     private val context: Context,

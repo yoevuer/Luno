@@ -1,4 +1,4 @@
-package hunoia.luno.service
+package hunoia.luno.runtime.overlay
 
 import android.graphics.Color
 import android.graphics.PixelFormat

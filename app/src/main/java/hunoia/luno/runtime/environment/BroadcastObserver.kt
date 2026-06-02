@@ -1,4 +1,4 @@
-package hunoia.luno.service
+package hunoia.luno.runtime.environment
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -7,7 +7,11 @@ import android.content.IntentFilter
 import hunoia.luno.core.Events
 import hunoia.luno.bridge.WallpaperChangedEvent
 
-class SystemBroadcastObserver(private val context: Context, private val onScreenOff: () -> Unit, private val onUserPresent: () -> Unit) {
+class BroadcastObserver(
+    private val context: Context,
+    private val onScreenOff: () -> Unit = {},
+    private val onUserPresent: () -> Unit = {},
+) {
     private var registered = false
 
     private val receiver = object : BroadcastReceiver() {

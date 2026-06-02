@@ -1,20 +1,19 @@
-package hunoia.luno.service.runtime
+package hunoia.luno.runtime.button
 
 import android.os.SystemClock
 import hunoia.luno.config.model.GestureButton
-import hunoia.luno.service.hiddenKey
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-class GestureButtonHideRuntime(
+class ButtonHideRuntime(
     private val scope: CoroutineScope,
     private val onStateChanged: () -> Unit,
 ) {
     private val hiddenButtons = mutableMapOf<String, Long>()
 
     fun hideTemporarily(button: GestureButton, delayMs: Long) {
-        val key = button.hiddenKey()
+        val key = button.id
         hiddenButtons[key] = SystemClock.uptimeMillis() + delayMs
         onStateChanged()
         scope.launch {
