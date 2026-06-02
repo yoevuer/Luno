@@ -178,6 +178,7 @@ class SideGestureService : ComponentAccessibilityService(), SideGestureRuntime, 
         pointerRuntime.onDestroy()
         volumeScrubRuntime.onDestroy()
         proxy.onRelease()
+        windowController.detachTransientOverlays()
         systemBroadcastObserver.unregister()
         wallpaperColorsListener?.let { listener ->
             WallpaperManager.getInstance(this).removeOnColorsChangedListener(listener)
@@ -212,10 +213,15 @@ class SideGestureService : ComponentAccessibilityService(), SideGestureRuntime, 
                 if (inSubGesture) windowController.attachSubGestureOverlay(center, radiusPx)
                 else windowController.detachSubGestureOverlay()
             },
+            onActionPanelOverlayChanged = { show ->
+                if (show) windowController.attachActionPanelOverlay()
+                else windowController.detachActionPanelOverlay()
+            },
             onAction = { action, sourceButton, sourceOverride ->
                 proxy.onAction(action, sourceButton, sourceOverride)
             },
             onPointerStart = { settings -> pointerRuntime.beginBridge(settings) },
+            onPointerShow = { settings -> pointerRuntime.showBridge(settings) },
             onPointerEnd = { pointerRuntime.end() },
             onPointerActionAtPosition = { x, y, keepActive ->
                 pointerRuntime.performBridgeActionAt(x, y, keepActive)

@@ -42,8 +42,6 @@ object GestureButtonDefaults {
     val LongSlideTriggerDistance = DensityProvider.dp2px(100f)
     const val LongPressTriggerDelayMs = 250L
     const val DoubleTapTriggerDelayMs = 300L
-    const val LongSlideTriggerImmediately = true
-    const val LongSlideTriggerDelayMs = 100L
     const val SlideHoldTriggerDelayMs = 120L
     const val LongSlideHoldTriggerDelayMs = 120L
     const val SlideVibrate = true
@@ -90,8 +88,6 @@ data class GestureButton(
     val longSlideTriggerDistance: Int = GestureButtonDefaults.LongSlideTriggerDistance,
     val longPressTriggerDelayMs: Long = GestureButtonDefaults.LongPressTriggerDelayMs,
     val doubleTapTriggerDelayMs: Long = GestureButtonDefaults.DoubleTapTriggerDelayMs,
-    val longSlideTriggerImmediately: Boolean = GestureButtonDefaults.LongSlideTriggerImmediately,
-    val longSlideTriggerDelayMs: Long = GestureButtonDefaults.LongSlideTriggerDelayMs,
     val slideHoldTriggerDelayMs: Long = GestureButtonDefaults.SlideHoldTriggerDelayMs,
     val longSlideHoldTriggerDelayMs: Long = GestureButtonDefaults.LongSlideHoldTriggerDelayMs,
     val fitSoftKeyboard: Boolean = GestureButtonDefaults.FitSoftKeyboard,

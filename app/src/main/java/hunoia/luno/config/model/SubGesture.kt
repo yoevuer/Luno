@@ -29,8 +29,6 @@ data class SubGesture(
     val timeoutMs: Long = SubGestureTimeoutMs,
     val triggerDistance: Int = DensityProvider.dp2px(30f),
     val longSlideTriggerDistance: Int = DensityProvider.dp2px(96f),
-    val longSlideTriggerImmediately: Boolean = true,
-    val longSlideTriggerDelayMs: Long = 100L,
     val slideHoldTriggerDelayMs: Long = 120L,
     val longSlideHoldTriggerDelayMs: Long = 120L,
 ) {

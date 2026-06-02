@@ -92,11 +92,9 @@ import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import com.aaron.compose.ktx.onSingleClick
 import hunoia.luno.config.defaults.SettingsUiDefaults.MaxLongPressTriggerDelayMs
-import hunoia.luno.config.defaults.SettingsUiDefaults.MaxLongSlideTriggerDelayMs
 import hunoia.luno.config.defaults.SettingsUiDefaults.MaxLongSlideTriggerDistance
 import hunoia.luno.config.defaults.SettingsUiDefaults.MaxSlideTriggerDistance
 import hunoia.luno.config.defaults.SettingsUiDefaults.MinLongPressTriggerDelayMs
-import hunoia.luno.config.defaults.SettingsUiDefaults.MinLongSlideTriggerDelayMs
 import hunoia.luno.config.defaults.SettingsUiDefaults.MinLongSlideTriggerDistance
 import hunoia.luno.config.defaults.SettingsUiDefaults.MinSlideTriggerDistance
 import hunoia.luno.config.defaults.SettingsUiDefaults.getPredefinedVibrationEffectText

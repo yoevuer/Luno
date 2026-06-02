@@ -8,7 +8,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import hunoia.luno.action.TriggerType
+import hunoia.luno.config.model.ArcStyle
 import hunoia.luno.config.model.Action
 import hunoia.luno.config.model.ActionPanelStyle
 import hunoia.luno.config.model.GestureDirection
@@ -37,6 +39,10 @@ class ActionPanelState(private val coroutineScope: CoroutineScope) : LongSlideSt
         private set
     var buttonColor: Int by mutableStateOf(android.graphics.Color.TRANSPARENT)
         private set
+    var parentSize: Size by mutableStateOf(Size.Zero)
+        private set
+    var itemSizePx: Float by mutableStateOf(0f)
+        private set
     var selectedIndex: Int by mutableStateOf(-1)
         private set
     private var selectedBaseAction: Action by mutableStateOf(Action.NONE)
@@ -59,6 +65,38 @@ class ActionPanelState(private val coroutineScope: CoroutineScope) : LongSlideSt
         this.actions = actions
         this.actionPanelStyle = actionPanelStyle
         this.buttonColor = buttonColor
+    }
+
+    fun setLayoutInfo(parentSize: Size, itemSizePx: Float) {
+        this.parentSize = parentSize
+        this.itemSizePx = itemSizePx
+    }
+
+    fun hitTestAction(finger: Offset): Action? {
+        if (!visible || parentSize.isEmpty() || itemSizePx <= 0f || origin.x.isNaN()) return null
+        val panelOrigin = actionPanelOrigin(parentSize, origin, itemSizePx)
+        val sector = actionPanelSector(parentSize, panelOrigin, direction, itemSizePx)
+        val spreadSpacing = (actionPanelStyle as? ArcStyle)?.spreadSpacing ?: 1.0f
+        actions.forEachIndexed { index, action ->
+            val displayIndex = actionPanelDisplayIndex(sector, actions.size, index)
+            val targetAnimOffset = actionPanelItemOffset(
+                parentSize = parentSize,
+                origin = panelOrigin,
+                sector = sector,
+                actionCount = actions.size,
+                index = displayIndex,
+                itemSizePx = itemSizePx,
+                spreadSpacing = spreadSpacing,
+            )
+            if (actionPanelHitContains(finger, panelOrigin, targetAnimOffset, itemSizePx)) {
+                return action
+            }
+        }
+        return null
+    }
+
+    fun cancel() {
+        reset()
     }
 
     fun onSelectStart(offset: Offset) {

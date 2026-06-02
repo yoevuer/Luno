@@ -20,8 +20,6 @@ object SettingsUiDefaults {
     const val MaxGestureButtonPosition = 1f
     const val MinGestureButtonLength = 0.01f
     const val MaxGestureButtonArea = 0.20f
-    const val MinLongSlideTriggerDelayMs = 0L
-    const val MaxLongSlideTriggerDelayMs = 250L
     const val MinHoldTriggerDelayMs = 0L
     const val MaxHoldTriggerDelayMs = 1000L
     const val MinDoubleTapTriggerDelayMs = 100L

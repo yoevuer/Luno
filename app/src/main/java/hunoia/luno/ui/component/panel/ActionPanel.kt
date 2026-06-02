@@ -90,6 +90,9 @@ fun ActionPanel(
         val resolvedStyle = actionPanelState.actionPanelStyle ?: actionPanelStyle
         val itemSizePx = (resolvedStyle as? ArcStyle)?.itemSize?.toFloat() ?: 48.dp.toPx()
         val actionLibrarySettings by ConfigProvider.actionLibrarySettings.collectAsStateWithLifecycle(initialValue = ActionLibrarySettings())
+        LaunchedEffect(parentSize, itemSizePx) {
+            actionPanelState.setLayoutInfo(parentSize, itemSizePx)
+        }
         Box(
             modifier = Modifier.onGloballyPositioned { parentSize = it.size.toSize() }
         ) {

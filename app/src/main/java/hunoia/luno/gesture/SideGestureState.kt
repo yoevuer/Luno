@@ -286,6 +286,7 @@ class SideGestureState(
         isOhoGestureEverCanTriggered = false
         slideVibrationFlags = false
         directTriggered = false
+        triggerDirection = GestureDirection.Right
         actionDirection = GestureDirection.Right
     }
 

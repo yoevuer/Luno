@@ -143,7 +143,7 @@ class SubGestureState(
         val direction = sg.angle.directionOf(subGestureAccum)
         if (distance >= sg.effectiveLongSlideTriggerDistance && sg.longSlideActionsFor(direction).hasMeaningfulActions()) {
             return resolve(sg, direction, GestureTriggerType.LongSlide)
-        } else if (distance >= sg.triggerDistance) {
+        } else if (distance >= sg.triggerDistance && sg.slideActionsFor(direction).hasMeaningfulActions()) {
             return resolve(sg, direction, GestureTriggerType.Slide)
         } else {
             subGestureAccum = Offset.Zero

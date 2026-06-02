@@ -29,9 +29,11 @@ fun GestureOverlayView(
     onSubGestureModeChanged: (Boolean, Offset, Int) -> Unit,
     onAction: (hunoia.luno.config.model.Action, hunoia.luno.config.model.GestureButton?, GestureButtonActionSettingsOverride?) -> Unit,
     onPointerStart: (GestureSettings.Pointer) -> Boolean,
+    onPointerShow: (GestureSettings.Pointer) -> Boolean,
     onPointerEnd: () -> Unit,
     onPointerActionAtPosition: (Int, Int, Boolean) -> Unit,
     windowController: SideGestureWindowController,
+    onActionPanelOverlayChanged: (Boolean) -> Unit = {},
 ) {
     var lastWallpaperChangeMs by remember { mutableStateOf(0L) }
     SubscribeEvent(eventClass = WallpaperChangedEvent::class) {
@@ -61,8 +63,10 @@ fun GestureOverlayView(
                 modifier = Modifier.matchParentSize(),
                 buttons = gestureButtons,
                 onSubGestureModeChanged = onSubGestureModeChanged,
+                onActionPanelOverlayChanged = onActionPanelOverlayChanged,
                 onAction = onAction,
                 onPointerStart = onPointerStart,
+                onPointerShow = onPointerShow,
                 onPointerEnd = onPointerEnd,
                 onPointerActionAtPosition = onPointerActionAtPosition,
                 actionSettings = actionSettings,

@@ -33,6 +33,12 @@ class PointerRuntime(
         return true
     }
 
+    fun showBridge(settings: GestureSettings.Pointer): Boolean {
+        if (!begin()) return false
+        showOverlay(settings, Offset.Unspecified)
+        return true
+    }
+
     private fun showOverlay(settings: GestureSettings.Pointer, previousPosition: Offset) {
         sessionSettings = settings
         val o = overlay ?: PointerOverlay(host).also { overlay = it }

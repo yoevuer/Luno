@@ -38,6 +38,47 @@ class SideGestureWindowController(private val host: SideGestureService) {
     var subGestureOverlayView: View? = null
         private set
 
+    var actionPanelOverlayView: View? = null
+        private set
+
+    fun attachActionPanelOverlay() {
+        if (actionPanelOverlayView != null) return
+        val wm = ContextCompat.getSystemService(host, WindowManager::class.java)!!
+        val lp = WindowManager.LayoutParams().apply {
+            type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
+            format = PixelFormat.RGBA_8888
+            flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+            width = WindowManager.LayoutParams.MATCH_PARENT
+            height = WindowManager.LayoutParams.MATCH_PARENT
+            @android.annotation.SuppressLint("RtlHardcoded")
+            gravity = Gravity.LEFT or Gravity.TOP
+            x = 0
+            y = 0
+            layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+        }
+        val view = View(host).apply {
+            setOnTouchListener { _, event ->
+                MotionEventDispatcher.dispatch(event)
+                true
+            }
+        }
+        wm.addView(view, lp)
+        actionPanelOverlayView = view
+    }
+
+    fun detachActionPanelOverlay() {
+        val view = actionPanelOverlayView ?: return
+        host.removeWindow(view)
+        actionPanelOverlayView = null
+    }
+
+    fun detachTransientOverlays() {
+        detachActionPanelOverlay()
+        detachSubGestureOverlay()
+    }
+
     fun replaceMainOverlay(content: @Composable () -> Unit) {
         mainView?.let { host.removeWindow(it) }
         mainView = attachComposeOverlay(content)
