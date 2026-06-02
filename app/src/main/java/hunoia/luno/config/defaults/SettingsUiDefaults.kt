@@ -28,6 +28,8 @@ object SettingsUiDefaults {
     const val MaxSubGestureTimeoutMs = 15000L
     val MinSubGestureTriggerDistance = DensityProvider.dp2px(16f)
     val MaxSubGestureTriggerDistance = DensityProvider.dp2px(60f)
+    val MinSubGestureLongSlideTriggerDistance = DensityProvider.dp2px(48f)
+    val MaxSubGestureLongSlideTriggerDistance = DensityProvider.dp2px(160f)
     const val GestureButtonColorAlpha = 0.36f
     val DisabledAlpha: Float get() = GestureButtonColorAlpha
     const val DimAlpha = 0.5f

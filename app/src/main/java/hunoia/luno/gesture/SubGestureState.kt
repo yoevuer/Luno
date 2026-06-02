@@ -25,16 +25,21 @@ data class SubGestureResolvedActions(
     val direction: GestureDirection,
     val actions: List<Action>,
     val isLongSlide: Boolean,
+    val touchPosition: Offset,
 )
 
 class SubGestureState(
     private val scope: CoroutineScope,
     private val subGestureSettings: SubGestureSettings,
-    private val onModeChanged: (Boolean) -> Unit,
+    private val onModeChanged: (Boolean, Offset, Int) -> Unit,
 ) {
     var activeSubGesture by mutableStateOf<SubGesture?>(null)
         private set
     var subGestureAccum by mutableStateOf(Offset.Zero)
+        private set
+    var origin by mutableStateOf(Offset.Unspecified)
+        private set
+    var finger by mutableStateOf(Offset.Unspecified)
         private set
     var subGestureDepth by mutableIntStateOf(0)
         private set
@@ -46,7 +51,7 @@ class SubGestureState(
 
     val isActive: Boolean get() = activeSubGesture != null
 
-    fun tryEnterSubGesture(action: Action): Boolean {
+    fun tryEnterSubGesture(action: Action, touchPosition: Offset): Boolean {
         if (action.value != ActionFacade.SUB_GESTURE) return false
         val id = try {
             JsonSerializer.decodeFromString<SubGestureActionData>(action.data).id
@@ -55,17 +60,21 @@ class SubGestureState(
             ?: return false
         if (subGestureDepth >= MAX_SUB_GESTURE_DEPTH) return false
         activeSubGesture = target
+        origin = validOrUnspecified(touchPosition)
+        finger = origin
         subGestureAccum = Offset.Zero
         longSlideFirstTriggerMs = 0L
         slideVibrationFlags = false
         subGestureDepth += 1
         scheduleTimeout()
-        onModeChanged(true)
+        onModeChanged(true, origin, target.captureRadius)
         return true
     }
 
-    fun onDragStart(): Boolean {
+    fun onDragStart(offset: Offset): Boolean {
         if (!isActive) return false
+        origin = validOrUnspecified(offset)
+        finger = origin
         subGestureAccum = Offset.Zero
         longSlideFirstTriggerMs = 0L
         slideVibrationFlags = false
@@ -75,15 +84,19 @@ class SubGestureState(
 
     fun onDrag(dragAmount: Offset): SubGestureResolvedActions? {
         if (!isActive) return null
-        subGestureAccum += dragAmount
+        finger = if (finger.hasFiniteCoordinates()) finger + dragAmount else dragAmount
+        subGestureAccum = if (origin.hasFiniteCoordinates() && finger.hasFiniteCoordinates()) finger - origin else subGestureAccum + dragAmount
         val sg = activeSubGesture!!
         val distance = kotlin.math.hypot(subGestureAccum.x, subGestureAccum.y)
-        if (distance >= sg.longSlideTriggerDistance) {
+        val canReachLongSlide = distance >= sg.effectiveLongSlideTriggerDistance
+        if (canReachLongSlide) {
             if (longSlideFirstTriggerMs == 0L) {
                 longSlideFirstTriggerMs = SystemClock.uptimeMillis()
-            } else if (sg.longSlideTriggerImmediately && SystemClock.uptimeMillis() - longSlideFirstTriggerMs >= sg.longSlideTriggerDelayMs) {
-                val direction = sg.angle.directionOf(subGestureAccum)
-                return resolve(sg, direction, isLongSlide = true)
+            } else if (SystemClock.uptimeMillis() - longSlideFirstTriggerMs >= sg.longSlideTriggerDelayMs) {
+                if (sg.longSlideTriggerImmediately) {
+                    val direction = sg.angle.directionOf(subGestureAccum)
+                    return resolve(sg, direction, isLongSlide = true)
+                }
             }
         } else {
             longSlideFirstTriggerMs = 0L
@@ -100,17 +113,16 @@ class SubGestureState(
         val sg = activeSubGesture!!
         val distance = kotlin.math.hypot(subGestureAccum.x, subGestureAccum.y)
         val direction = sg.angle.directionOf(subGestureAccum)
-        val canLongSlide = !sg.longSlideTriggerImmediately &&
-            distance >= sg.longSlideTriggerDistance &&
-            longSlideFirstTriggerMs != 0L &&
+        if (!sg.longSlideTriggerImmediately &&
+            distance >= sg.effectiveLongSlideTriggerDistance &&
             SystemClock.uptimeMillis() - longSlideFirstTriggerMs >= sg.longSlideTriggerDelayMs
-        return when {
-            canLongSlide -> resolve(sg, direction, isLongSlide = true)
-            distance >= sg.triggerDistance -> resolve(sg, direction, isLongSlide = false)
-            else -> {
-                subGestureAccum = Offset.Zero
-                null
-            }
+        ) {
+            return resolve(sg, direction, isLongSlide = true)
+        } else if (distance >= sg.triggerDistance) {
+            return resolve(sg, direction, isLongSlide = false)
+        } else {
+            subGestureAccum = Offset.Zero
+            return null
         }
     }
 
@@ -122,13 +134,15 @@ class SubGestureState(
     fun clear(notifyService: Boolean = true) {
         activeSubGesture = null
         lastResolvedActionSubGesture = null
+        origin = Offset.Unspecified
         subGestureAccum = Offset.Zero
+        finger = Offset.Unspecified
         longSlideFirstTriggerMs = 0L
         slideVibrationFlags = false
         subGestureDepth = 0
         timeoutJob?.cancel()
         timeoutJob = null
-        if (notifyService) onModeChanged(false)
+        if (notifyService) onModeChanged(false, Offset.Unspecified, 0)
     }
 
     private fun scheduleTimeout() {
@@ -156,7 +170,16 @@ class SubGestureState(
         }
         lastResolvedActionSubGesture = subGesture
         activeSubGesture = null
+        timeoutJob?.cancel()
+        timeoutJob = null
+        val touchPosition = when {
+            finger.hasFiniteCoordinates() -> finger
+            origin.hasFiniteCoordinates() -> origin
+            else -> Offset.Unspecified
+        }
+        origin = Offset.Unspecified
         subGestureAccum = Offset.Zero
+        finger = Offset.Unspecified
         longSlideFirstTriggerMs = 0L
         if (isLongSlide) {
             subGesture.tryVibrateForLongSlide()
@@ -164,6 +187,13 @@ class SubGestureState(
             subGesture.tryVibrateForSlide()
         }
         slideVibrationFlags = false
-        return SubGestureResolvedActions(subGesture, direction, actions, isLongSlide)
+        onModeChanged(false, Offset.Unspecified, 0)
+        return SubGestureResolvedActions(subGesture, direction, actions, isLongSlide, touchPosition)
+    }
+
+    private fun Offset.hasFiniteCoordinates(): Boolean = x.isFinite() && y.isFinite()
+
+    private fun validOrUnspecified(offset: Offset): Offset {
+        return if (offset.hasFiniteCoordinates()) offset else Offset.Unspecified
     }
 }

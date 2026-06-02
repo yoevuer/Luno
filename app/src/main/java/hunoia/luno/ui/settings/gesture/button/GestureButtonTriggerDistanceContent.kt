@@ -48,6 +48,7 @@ fun GestureSlideTriggerDistanceContent(
     onLongPressTriggerDelayMsChange: ((Float) -> Unit)? = null,
     longSlideTriggerDistance: Int,
     onLongSlideTriggerDistanceChange: (Float) -> Unit,
+    longSlideTriggerDistanceRange: ClosedFloatingPointRange<Float> = MinLongSlideTriggerDistance.toFloat()..MaxLongSlideTriggerDistance.toFloat(),
     longSlideTriggerImmediately: Boolean,
     onLongSlideTriggerImmediatelyChange: (Boolean) -> Unit,
     longSlideTriggerDelayMs: Long,
@@ -76,7 +77,7 @@ fun GestureSlideTriggerDistanceContent(
             onValueChange = onLongSlideTriggerDistanceChange,
             text = stringResource(R.string.trigger_long_slide_distance),
             valueDisplay = "${longSlideTriggerDistance}px",
-            valueRange = MinLongSlideTriggerDistance.toFloat()..MaxLongSlideTriggerDistance.toFloat(),
+            valueRange = longSlideTriggerDistanceRange,
         )
         ExpressiveSwitchItem(
             onCheckedChange = onLongSlideTriggerImmediatelyChange,

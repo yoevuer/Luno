@@ -208,8 +208,8 @@ class SideGestureService : ComponentAccessibilityService(), SideGestureRuntime, 
         val screenshotService = this
         GestureOverlayView(
             screenshotService = screenshotService,
-            onSubGestureModeChanged = { inSubGesture ->
-                if (inSubGesture) windowController.attachSubGestureOverlay()
+            onSubGestureModeChanged = { inSubGesture, center, radiusPx ->
+                if (inSubGesture) windowController.attachSubGestureOverlay(center, radiusPx)
                 else windowController.detachSubGestureOverlay()
             },
             onAction = { action, sourceButton, sourceOverride ->

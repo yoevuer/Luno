@@ -5,6 +5,7 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import androidx.compose.ui.geometry.Offset
 import kotlin.math.roundToInt
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.ComposeView
@@ -62,20 +63,13 @@ class SideGestureWindowController(private val host: SideGestureService) {
         updateWindowLayout(view, lp)
     }
 
-    fun attachSubGestureOverlay() {
-        if (subGestureOverlayView != null) return
-        val wm = ContextCompat.getSystemService(host, WindowManager::class.java)!!
-        val lp = WindowManager.LayoutParams().apply {
-            type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
-            format = PixelFormat.RGBA_8888
-            width = WindowManager.LayoutParams.MATCH_PARENT
-            height = WindowManager.LayoutParams.MATCH_PARENT
-            flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-            @android.annotation.SuppressLint("RtlHardcoded")
-            gravity = Gravity.LEFT or Gravity.TOP
+    fun attachSubGestureOverlay(center: Offset, radiusPx: Int) {
+        val lp = createSubGestureLayoutParams(center, radiusPx)
+        subGestureOverlayView?.let { view ->
+            updateWindowLayout(view, lp)
+            return
         }
+        val wm = ContextCompat.getSystemService(host, WindowManager::class.java)!!
         val view = View(host).apply {
             setOnTouchListener { _, event ->
                 MotionEventDispatcher.dispatch(event)
@@ -84,6 +78,28 @@ class SideGestureWindowController(private val host: SideGestureService) {
         }
         wm.addView(view, lp)
         subGestureOverlayView = view
+    }
+
+    private fun createSubGestureLayoutParams(center: Offset, radiusPx: Int): WindowManager.LayoutParams {
+        val screenWidth = DensityProvider.screenWidthPx
+        val screenHeight = DensityProvider.screenHeightPx
+        val radius = radiusPx.coerceAtLeast(DensityProvider.dp2px(48f))
+        val size = (radius * 2).coerceAtMost(maxOf(screenWidth, screenHeight))
+        val validCenter = if (center.x.isFinite() && center.y.isFinite()) center else Offset(screenWidth / 2f, screenHeight / 2f)
+        return WindowManager.LayoutParams().apply {
+            type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
+            format = PixelFormat.RGBA_8888
+            width = size.coerceAtMost(screenWidth)
+            height = size.coerceAtMost(screenHeight)
+            x = (validCenter.x - width / 2f).roundToInt().coerceIn(0, (screenWidth - width).coerceAtLeast(0))
+            y = (validCenter.y - height / 2f).roundToInt().coerceIn(0, (screenHeight - height).coerceAtLeast(0))
+            flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+            @android.annotation.SuppressLint("RtlHardcoded")
+            gravity = Gravity.LEFT or Gravity.TOP
+            layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+        }
     }
 
     fun detachSubGestureOverlay() {

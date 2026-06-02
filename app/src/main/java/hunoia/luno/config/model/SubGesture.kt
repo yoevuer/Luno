@@ -26,10 +26,17 @@ data class SubGesture(
     val actionSettingsOverride: GestureButtonActionSettingsOverride = GestureButtonActionSettingsOverride(),
     val timeoutMs: Long = SubGestureTimeoutMs,
     val triggerDistance: Int = DensityProvider.dp2px(30f),
-    val longSlideTriggerDistance: Int = DensityProvider.dp2px(100f),
+    val longSlideTriggerDistance: Int = DensityProvider.dp2px(96f),
     val longSlideTriggerImmediately: Boolean = true,
     val longSlideTriggerDelayMs: Long = 100L,
 ) {
+    val effectiveLongSlideTriggerDistance: Int
+        get() = longSlideTriggerDistance.coerceAtLeast(triggerDistance)
+
+    val captureRadius: Int
+        get() = (effectiveLongSlideTriggerDistance + DensityProvider.dp2px(24f))
+            .coerceAtMost(DensityProvider.dp2px(220f))
+
     fun slideActionsFor(direction: GestureDirection): List<Action> = slideActions.actionsBy(direction)
 
     fun longSlideActionsFor(direction: GestureDirection): List<Action> = longSlideActions.actionsBy(direction)

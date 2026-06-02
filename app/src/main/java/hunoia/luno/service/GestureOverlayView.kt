@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import hunoia.luno.bridge.WallpaperChangedEvent
 import hunoia.luno.config.model.ActionSettings
@@ -25,7 +26,7 @@ import hunoia.luno.ui.theme.SideGestureTheme
 @Composable
 fun GestureOverlayView(
     screenshotService: SideGestureService,
-    onSubGestureModeChanged: (Boolean) -> Unit,
+    onSubGestureModeChanged: (Boolean, Offset, Int) -> Unit,
     onAction: (hunoia.luno.config.model.Action, hunoia.luno.config.model.GestureButton?, GestureButtonActionSettingsOverride?) -> Unit,
     onPointerStart: (GestureSettings.Pointer) -> Boolean,
     onPointerEnd: () -> Unit,

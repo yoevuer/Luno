@@ -63,6 +63,8 @@ import com.aaron.compose.ktx.onSingleClick
 import hunoia.luno.config.defaults.SettingsUiDefaults.getPredefinedVibrationEffectText
 import hunoia.luno.config.defaults.SettingsUiDefaults.MinSubGestureTriggerDistance
 import hunoia.luno.config.defaults.SettingsUiDefaults.MaxSubGestureTriggerDistance
+import hunoia.luno.config.defaults.SettingsUiDefaults.MinSubGestureLongSlideTriggerDistance
+import hunoia.luno.config.defaults.SettingsUiDefaults.MaxSubGestureLongSlideTriggerDistance
 import hunoia.luno.config.defaults.SettingsUiDefaults.MinSubGestureTimeoutMs
 import hunoia.luno.config.defaults.SettingsUiDefaults.MaxSubGestureTimeoutMs
 import hunoia.luno.bridge.vibration.MaxCustomVibrationMs
@@ -369,6 +371,7 @@ private fun SubGestureTriggerDistanceContent(
             slideTriggerDistanceRange = MinSubGestureTriggerDistance.toFloat()..MaxSubGestureTriggerDistance.toFloat(),
             longSlideTriggerDistance = gesture.longSlideTriggerDistance,
             onLongSlideTriggerDistanceChange = vm::onSubLongSlideTriggerDistanceChange,
+            longSlideTriggerDistanceRange = MinSubGestureLongSlideTriggerDistance.toFloat()..MaxSubGestureLongSlideTriggerDistance.toFloat(),
             longSlideTriggerImmediately = gesture.longSlideTriggerImmediately,
             onLongSlideTriggerImmediatelyChange = vm::onSubLongSlideTriggerImmediatelyChange,
             longSlideTriggerDelayMs = gesture.longSlideTriggerDelayMs,
