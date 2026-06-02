@@ -4,10 +4,10 @@ import android.util.Log
 import hunoia.luno.BuildConfig
 import hunoia.luno.runtime.GestureRuntimeState
 import hunoia.luno.runtime.overlay.ButtonWindowController
-import hunoia.luno.runtime.settings.RuntimeSettingsStore
+import hunoia.luno.runtime.settings.SettingsStore
 
 class ButtonRefreshCoordinator(
-    private val runtimeSettingsStore: RuntimeSettingsStore,
+    private val runtimeSettingsStore: SettingsStore,
     private val buttonWindowController: ButtonWindowController,
     private val buildRuntimeState: () -> GestureRuntimeState,
 ) {

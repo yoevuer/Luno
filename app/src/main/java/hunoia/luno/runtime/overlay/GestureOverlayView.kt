@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import hunoia.luno.bridge.WallpaperChangedEvent
-import hunoia.luno.runtime.settings.RuntimeSettingsState
+import hunoia.luno.runtime.settings.SettingsState
 import hunoia.luno.ui.component.container.SideGestureContainer
 import hunoia.luno.core.Events
 import hunoia.luno.core.Events.SubscribeEvent
@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 @Composable
 fun GestureOverlayView(
     callbacks: GestureOverlayCallbacks,
-    settingsState: StateFlow<RuntimeSettingsState>,
+    settingsState: StateFlow<SettingsState>,
 ) {
     var lastWallpaperChangeMs by remember { mutableStateOf(0L) }
     SubscribeEvent(eventClass = WallpaperChangedEvent::class) {

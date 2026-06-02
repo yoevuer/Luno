@@ -9,13 +9,11 @@ import hunoia.luno.config.model.ActionLibraryRefData
 import hunoia.luno.config.model.ActionLibrarySettings
 import hunoia.luno.config.model.AdvancedSettings
 import hunoia.luno.config.model.Backup
-import hunoia.luno.config.model.DirectionActions
 import hunoia.luno.config.model.FrozenAppSettings
 import hunoia.luno.config.model.GestureSettings
 import hunoia.luno.config.model.SubGestureSettings
 import hunoia.luno.config.model.InitialSettings
 import hunoia.luno.config.model.QuickAppLauncherSettings
-import hunoia.luno.config.model.SubGesture
 import hunoia.luno.core.AppContext
 import hunoia.luno.config.model.GestureButton
 import hunoia.luno.core.JsonSerializer
@@ -144,10 +142,16 @@ object ConfigProvider {
                 settings.copy(entries = settings.entries.filterNot { it.id == entryId })
             }
         }
-        launch { _gestureButtons.updateData { buttons -> buttons.map { it.cleanActionLibraryRef(entryId) } } }
+        launch {
+            _gestureButtons.updateData { buttons ->
+                buttons.map { it.cleanActions { action -> action.isActionLibraryRef(entryId) } }
+            }
+        }
         launch {
             _subGestureSettings.updateData { settings ->
-                settings.copy(subGestures = settings.subGestures.map { it.cleanActionLibraryRef(entryId) })
+                settings.copy(subGestures = settings.subGestures.map {
+                    it.cleanActions { action -> action.isActionLibraryRef(entryId) }
+                })
             }
         }
     }
@@ -199,36 +203,6 @@ object ConfigProvider {
         launch { _frozenAppSettings.updateData { FrozenAppSettings() } }
         launch { _subGestureSettings.updateData { SubGestureSettings() } }
         launch { _actionLibrarySettings.updateData { ActionLibrarySettings() } }
-    }
-
-    private fun GestureButton.cleanActionLibraryRef(entryId: String): GestureButton = copy(
-        slideActions = slideActions.cleanActionLibraryRef(entryId),
-        slideHoldActions = slideHoldActions.cleanActionLibraryRef(entryId),
-        longSlideActions = longSlideActions.cleanActionLibraryRef(entryId),
-        longSlideHoldActions = longSlideHoldActions.cleanActionLibraryRef(entryId),
-        tapActions = tapActions.cleanActionLibraryRef(entryId),
-        doubleTapActions = doubleTapActions.cleanActionLibraryRef(entryId),
-        longPressActions = longPressActions.cleanActionLibraryRef(entryId),
-    )
-
-    private fun DirectionActions.cleanActionLibraryRef(entryId: String): DirectionActions {
-        return copy(actions = actions.mapValues { (_, list) -> list.cleanActionLibraryRef(entryId) })
-    }
-
-    private fun List<Action>.cleanActionLibraryRef(entryId: String): List<Action> {
-        return mapNotNull { action ->
-            if (action.isActionLibraryRef(entryId)) null
-            else action.copy(longPressAction = action.longPressAction?.takeUnless { it.isActionLibraryRef(entryId) })
-        }
-    }
-
-    private fun SubGesture.cleanActionLibraryRef(entryId: String): SubGesture {
-        return copy(
-            slideActions = slideActions.cleanActionLibraryRef(entryId),
-            slideHoldActions = slideHoldActions.cleanActionLibraryRef(entryId),
-            longSlideActions = longSlideActions.cleanActionLibraryRef(entryId),
-            longSlideHoldActions = longSlideHoldActions.cleanActionLibraryRef(entryId),
-        )
     }
 
     private fun Action.isActionLibraryRef(entryId: String): Boolean {

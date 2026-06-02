@@ -24,7 +24,7 @@ import hunoia.luno.runtime.environment.BroadcastObserver
 import hunoia.luno.runtime.environment.EnvironmentTracker
 import hunoia.luno.runtime.overlay.GestureOverlayCallbacks
 import hunoia.luno.runtime.overlay.OverlayCoordinator
-import hunoia.luno.runtime.settings.RuntimeSettingsStore
+import hunoia.luno.runtime.settings.SettingsStore
 import hunoia.luno.runtime.volume.VolumeScrubRuntime
 import hunoia.luno.bridge.feedback.showToast
 import kotlinx.coroutines.Dispatchers
@@ -38,7 +38,7 @@ import kotlinx.coroutines.launch
 class GestureCoordinator(
     private val host: GestureHost,
 ) {
-    val runtimeSettingsStore = RuntimeSettingsStore(host.coroutineScope)
+    val runtimeSettingsStore = SettingsStore(host.coroutineScope)
     val environmentTracker = EnvironmentTracker(
         getCurrentPackageName = { host.getCurrentPackageName() },
         nowInLauncher = { host.nowInLauncher() },
@@ -132,6 +132,7 @@ class GestureCoordinator(
         onStateChanged = { refreshGestureButtons() },
     )
 
+    private var started = false
     private var wallpaperColorsListener: WallpaperManager.OnColorsChangedListener? = null
 
     private val callbacks: GestureOverlayCallbacks = object : GestureOverlayCallbacks {
@@ -167,6 +168,8 @@ class GestureCoordinator(
     }
 
     fun onSetOverlay() {
+        if (started) return
+        started = true
         if (BuildConfig.DEBUG) Log.d("LunoLauncher", "GestureCoordinator start")
         runtimeSettingsStore.start()
         broadcastObserver.register()
@@ -213,10 +216,11 @@ class GestureCoordinator(
     }
 
     fun onDestroy() {
+        if (!started) return
+        started = false
         if (BuildConfig.DEBUG) Log.d("LunoLauncher", "GestureCoordinator destroy")
         overlayCoordinator.release()
         broadcastObserver.unregister()
-        host.coroutineScope.cancel()
         pointerRuntime.onDestroy()
         volumeScrubRuntime.onDestroy()
         previousAppTracker.onRelease()
@@ -225,6 +229,8 @@ class GestureCoordinator(
             WallpaperManager.getInstance(host.context).removeOnColorsChangedListener(listener)
             wallpaperColorsListener = null
         }
+        PointerFacade.runtimeProvider = null
+        host.coroutineScope.cancel()
     }
 
     private fun refreshGestureButtons(delayMs: Long = 100L) {

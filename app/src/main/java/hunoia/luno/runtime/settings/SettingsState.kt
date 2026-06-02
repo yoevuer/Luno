@@ -7,7 +7,7 @@ import hunoia.luno.config.model.GestureSettings
 import hunoia.luno.config.model.InitialSettings
 import hunoia.luno.config.model.SubGestureSettings
 
-data class RuntimeSettingsState(
+data class SettingsState(
     val initialSettings: InitialSettings = InitialSettings(),
     val advancedSettings: AdvancedSettings = AdvancedSettings(),
     val gestureSettings: GestureSettings = GestureSettings(),

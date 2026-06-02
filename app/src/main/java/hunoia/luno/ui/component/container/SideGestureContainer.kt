@@ -33,7 +33,7 @@ import hunoia.luno.gesture.GestureResolvedActions
 import hunoia.luno.gesture.GestureFacade
 import hunoia.luno.ui.component.panel.ActionPanel
 import hunoia.luno.ui.component.panel.rememberActionPanelState
-import hunoia.luno.gesture.SideGestureState
+import hunoia.luno.gesture.GestureState
 import hunoia.luno.gesture.SubGestureState
 import hunoia.luno.gesture.VolumeScrubState
 import hunoia.luno.pointer.rememberPointerHandle
@@ -65,7 +65,7 @@ fun SideGestureContainer(
     val curOnAction by rememberUpdatedState(newValue = onAction)
     val curOnSubGestureModeChanged by rememberUpdatedState(newValue = onSubGestureModeChanged)
     val coroutineScope = rememberCoroutineScope()
-    val sideGestureState = rememberSideGestureState(buttons, advancedSettings, gestureSettings)
+    val sideGestureState = rememberGestureState(buttons, advancedSettings, gestureSettings)
     val actionPanelState = rememberActionPanelState()
     var actionPanelSourceOverride by remember { mutableStateOf<GestureButtonActionSettingsOverride?>(null) }
     var actionPanelPointerUsesRuntimeOverlay by remember { mutableStateOf(false) }
@@ -427,14 +427,14 @@ fun SideGestureContainer(
 }
 
 @Composable
-internal fun rememberSideGestureState(
+internal fun rememberGestureState(
     buttons: List<GestureButton>,
     advancedSettings: AdvancedSettings = AdvancedSettings(),
     gestureSettings: GestureSettings = GestureSettings()
-): SideGestureState {
+): GestureState {
     val coroutineScope = rememberCoroutineScope()
     return remember(coroutineScope, buttons, advancedSettings, gestureSettings) {
-        SideGestureState(coroutineScope, buttons, advancedSettings, gestureSettings)
+        GestureState(coroutineScope, buttons, advancedSettings, gestureSettings)
     }
 }
 

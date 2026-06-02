@@ -56,9 +56,6 @@ class SideGestureService : ComponentAccessibilityService(), GestureHost, QuickAp
         current = this
         gestureCoordinator = GestureCoordinator(this)
         gestureCoordinator.onSetOverlay()
-        coroutineScope.launch(Dispatchers.IO) {
-            QuickLaunchFacade.queryApps(this@SideGestureService)
-        }
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -79,6 +76,7 @@ class SideGestureService : ComponentAccessibilityService(), GestureHost, QuickAp
         gestureCoordinator.onDestroy()
         quickAppLauncherOverlay.closeImmediately()
         runtimePanelOverlay.close()
+        QuickLaunchFacade.showOverlay = {}
     }
 
     override fun nowInLauncher(): Boolean {

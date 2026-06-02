@@ -16,11 +16,11 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
-class RuntimeSettingsStore(
+class SettingsStore(
     private val scope: CoroutineScope,
 ) {
-    private val _state = MutableStateFlow(RuntimeSettingsState())
-    val state: StateFlow<RuntimeSettingsState> = _state.asStateFlow()
+    private val _state = MutableStateFlow(SettingsState())
+    val state: StateFlow<SettingsState> = _state.asStateFlow()
 
     private var started = false
 
@@ -36,7 +36,7 @@ class RuntimeSettingsStore(
                 ConfigProvider.initialSettings,
                 ConfigProvider.subGestureSettings,
             ) { values ->
-                RuntimeSettingsState(
+                SettingsState(
                     gestureButtons = values[0] as List<GestureButton>,
                     advancedSettings = values[1] as AdvancedSettings,
                     gestureSettings = values[2] as GestureSettings,
@@ -48,5 +48,5 @@ class RuntimeSettingsStore(
         }
     }
 
-    fun snapshot(): RuntimeSettingsState = _state.value
+    fun snapshot(): SettingsState = _state.value
 }
