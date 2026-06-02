@@ -2,17 +2,17 @@ package hunoia.luno.ui.component
 
 import androidx.annotation.StringRes
 import hunoia.luno.R
-import hunoia.luno.config.model.SubGestureDirection
+import hunoia.luno.config.model.GestureDirection
 
 @get:StringRes
-val SubGestureDirection.displayNameRes: Int
+val GestureDirection.displayNameRes: Int
     get() = when (this) {
-        SubGestureDirection.Up -> R.string.top
-        SubGestureDirection.Down -> R.string.bottom
-        SubGestureDirection.Left -> R.string.left
-        SubGestureDirection.Right -> R.string.right
-        SubGestureDirection.UpLeft -> R.string.direction_up_left
-        SubGestureDirection.UpRight -> R.string.direction_up_right
-        SubGestureDirection.DownLeft -> R.string.direction_down_left
-        SubGestureDirection.DownRight -> R.string.direction_down_right
+        GestureDirection.Up -> R.string.top
+        GestureDirection.Down -> R.string.bottom
+        GestureDirection.Left -> R.string.left
+        GestureDirection.Right -> R.string.right
+        GestureDirection.UpLeft -> R.string.direction_up_left
+        GestureDirection.UpRight -> R.string.direction_up_right
+        GestureDirection.DownLeft -> R.string.direction_down_left
+        GestureDirection.DownRight -> R.string.direction_down_right
     }

@@ -2,6 +2,7 @@ package hunoia.luno.config
 
 import hunoia.luno.action.api.ActionFacade
 import hunoia.luno.config.model.Action
+import hunoia.luno.config.model.DirectionActions
 import hunoia.luno.config.model.GestureButton
 import kotlinx.serialization.json.Json
 
@@ -28,17 +29,10 @@ object SubGestureCleaner {
 
         ConfigProvider.updateGestureButtons { cleanActions(it) }
         ConfigProvider.updateSubGestureSettings { settings ->
-            fun clean(action: Action?) = action?.takeUnless(shouldRemove)
             val cleanedSubGestures = settings.subGestures.map { gesture ->
                 gesture.copy(
-                    upAction = clean(gesture.upAction),
-                    downAction = clean(gesture.downAction),
-                    leftAction = clean(gesture.leftAction),
-                    rightAction = clean(gesture.rightAction),
-                    upRightAction = clean(gesture.upRightAction),
-                    downRightAction = clean(gesture.downRightAction),
-                    downLeftAction = clean(gesture.downLeftAction),
-                    upLeftAction = clean(gesture.upLeftAction),
+                    slideActions = gesture.slideActions.clean(shouldRemove),
+                    longSlideActions = gesture.longSlideActions.clean(shouldRemove),
                 )
             }
             settings.copy(subGestures = cleanedSubGestures)
@@ -57,4 +51,8 @@ object SubGestureCleaner {
             false
         }
     }
+}
+
+private fun DirectionActions.clean(shouldRemove: (Action) -> Boolean): DirectionActions {
+    return copy(actions = actions.mapValues { (_, actions) -> actions.filterNot(shouldRemove) })
 }

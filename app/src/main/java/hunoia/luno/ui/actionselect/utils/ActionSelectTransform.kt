@@ -167,7 +167,7 @@ internal fun assembleDataTransform(state: UiState): UiState {
         .toMutableList()
         .apply {
             state.subGestures
-                .filter { gesture -> gesture.enabled }
+                .filter { gesture -> gesture.enabled && gesture.id != state.excludedSubGestureId }
                 .forEach { gesture ->
                     add(
                         Action(

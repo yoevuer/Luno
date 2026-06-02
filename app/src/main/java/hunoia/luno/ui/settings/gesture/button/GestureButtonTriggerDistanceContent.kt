@@ -23,40 +23,78 @@ fun GestureButtonTriggerDistanceContent(
     vm: GestureButtonSettingsVM
 ) {
     val scrollState = rememberScrollState()
-    MyColumn(scrollState = scrollState) {
+    GestureSlideTriggerDistanceContent(
+        slideTriggerDistance = button.slideTriggerDistance,
+        onSlideTriggerDistanceChange = vm::onSlideTriggerDistanceChange,
+        slideTriggerDistanceRange = MinSlideTriggerDistance.toFloat()..MaxSlideTriggerDistance.toFloat(),
+        longPressTriggerDelayMs = button.longPressTriggerDelayMs,
+        onLongPressTriggerDelayMsChange = vm::onLongPressTriggerDelayMsChange,
+        longSlideTriggerDistance = button.longSlideTriggerDistance,
+        onLongSlideTriggerDistanceChange = vm::onLongSlideTriggerDistanceChange,
+        longSlideTriggerImmediately = button.longSlideTriggerImmediately,
+        onLongSlideTriggerImmediatelyChange = vm::onLongSlideTriggerImmediatelyChange,
+        longSlideTriggerDelayMs = button.longSlideTriggerDelayMs,
+        onLongSlideTriggerDelayMsChange = vm::onLongSlideTriggerDelayMsChange,
+        scrollState = scrollState,
+    )
+}
+
+@Composable
+fun GestureSlideTriggerDistanceContent(
+    slideTriggerDistance: Int,
+    onSlideTriggerDistanceChange: (Float) -> Unit,
+    slideTriggerDistanceRange: ClosedFloatingPointRange<Float>,
+    longPressTriggerDelayMs: Long? = null,
+    onLongPressTriggerDelayMsChange: ((Float) -> Unit)? = null,
+    longSlideTriggerDistance: Int,
+    onLongSlideTriggerDistanceChange: (Float) -> Unit,
+    longSlideTriggerImmediately: Boolean,
+    onLongSlideTriggerImmediatelyChange: (Boolean) -> Unit,
+    longSlideTriggerDelayMs: Long,
+    onLongSlideTriggerDelayMsChange: (Float) -> Unit,
+    scrollState: androidx.compose.foundation.ScrollState? = null,
+) {
+    val content: @Composable () -> Unit = {
         MyTextSlider(
-            value = button.slideTriggerDistance.toFloat(),
-            onValueChange = { vm.onSlideTriggerDistanceChange(it) },
+            value = slideTriggerDistance.toFloat(),
+            onValueChange = onSlideTriggerDistanceChange,
             text = stringResource(R.string.trigger_slide_distance),
-            valueDisplay = "${button.slideTriggerDistance}px",
-            valueRange = MinSlideTriggerDistance.toFloat()..MaxSlideTriggerDistance.toFloat()
+            valueDisplay = "${slideTriggerDistance}px",
+            valueRange = slideTriggerDistanceRange,
         )
+        if (longPressTriggerDelayMs != null && onLongPressTriggerDelayMsChange != null) {
+            MyTextSlider(
+                value = longPressTriggerDelayMs.toFloat(),
+                onValueChange = onLongPressTriggerDelayMsChange,
+                text = stringResource(R.string.trigger_long_press_delay),
+                valueDisplay = "${longPressTriggerDelayMs}ms",
+                valueRange = MinLongPressTriggerDelayMs.toFloat()..MaxLongPressTriggerDelayMs.toFloat(),
+            )
+        }
         MyTextSlider(
-            value = button.longPressTriggerDelayMs.toFloat(),
-            onValueChange = { vm.onLongPressTriggerDelayMsChange(it) },
-            text = stringResource(R.string.trigger_long_press_delay),
-            valueDisplay = "${button.longPressTriggerDelayMs}ms",
-            valueRange = MinLongPressTriggerDelayMs.toFloat()..MaxLongPressTriggerDelayMs.toFloat()
-        )
-        MyTextSlider(
-            value = button.longSlideTriggerDistance.toFloat(),
-            onValueChange = { vm.onLongSlideTriggerDistanceChange(it) },
+            value = longSlideTriggerDistance.toFloat(),
+            onValueChange = onLongSlideTriggerDistanceChange,
             text = stringResource(R.string.trigger_long_slide_distance),
-            valueDisplay = "${button.longSlideTriggerDistance}px",
-            valueRange = MinLongSlideTriggerDistance.toFloat()..MaxLongSlideTriggerDistance.toFloat()
+            valueDisplay = "${longSlideTriggerDistance}px",
+            valueRange = MinLongSlideTriggerDistance.toFloat()..MaxLongSlideTriggerDistance.toFloat(),
         )
         ExpressiveSwitchItem(
-            onCheckedChange = { vm.onLongSlideTriggerImmediatelyChange(it) },
-            checked = button.longSlideTriggerImmediately,
+            onCheckedChange = onLongSlideTriggerImmediatelyChange,
+            checked = longSlideTriggerImmediately,
             title = stringResource(R.string.long_slide_trigger_immediately),
-            subtitle = stringResource(R.string.long_slide_trigger_immediately_hint)
+            subtitle = stringResource(R.string.long_slide_trigger_immediately_hint),
         )
         MyTextSlider(
-            value = button.longSlideTriggerDelayMs.toFloat(),
-            onValueChange = { vm.onLongSlideTriggerDelayMsChange(it) },
+            value = longSlideTriggerDelayMs.toFloat(),
+            onValueChange = onLongSlideTriggerDelayMsChange,
             text = stringResource(R.string.trigger_long_slide_delay),
-            valueDisplay = "${button.longSlideTriggerDelayMs}ms",
-            valueRange = MinLongSlideTriggerDelayMs.toFloat()..MaxLongSlideTriggerDelayMs.toFloat()
+            valueDisplay = "${longSlideTriggerDelayMs}ms",
+            valueRange = MinLongSlideTriggerDelayMs.toFloat()..MaxLongSlideTriggerDelayMs.toFloat(),
         )
+    }
+    if (scrollState != null) {
+        MyColumn(scrollState = scrollState) { content() }
+    } else {
+        content()
     }
 }

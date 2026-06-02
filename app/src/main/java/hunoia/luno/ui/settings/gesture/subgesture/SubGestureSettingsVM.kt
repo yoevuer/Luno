@@ -7,12 +7,9 @@ import androidx.navigation.toRoute
 import com.aaron.compose.base.BaseComposeVM
 import hunoia.luno.R
 import hunoia.luno.config.SubGestureCleaner
-import hunoia.luno.config.model.Action
 import hunoia.luno.core.AppContext
-import hunoia.luno.action.api.ActionFacade
-import hunoia.luno.action.payload.SubGestureActionData
-import hunoia.luno.core.JsonSerializer
-import hunoia.luno.config.model.SubGestureDirection
+import hunoia.luno.config.model.ActionPanelStyles
+import hunoia.luno.config.model.GestureDirection
 import hunoia.luno.ui.navigation.SubGestureEditor
 import hunoia.luno.config.ConfigProvider
 import hunoia.luno.config.model.SubGesture
@@ -59,12 +56,15 @@ class SubGestureSettingsVM(savedStateHandle: SavedStateHandle) : BaseComposeVM<S
                     R.string.mirror_sub_gesture_name,
                     original.name.ifEmpty { AppContext.get().getString(R.string.sub_gesture) }
                 ),
-                leftAction = original.rightAction,
-                rightAction = original.leftAction,
-                upRightAction = original.upLeftAction,
-                upLeftAction = original.upRightAction,
-                downRightAction = original.downLeftAction,
-                downLeftAction = original.downRightAction,
+                slideActions = original.slideActions.copy(
+                    actions = original.slideActions.actions.mapKeys { (direction, _) -> direction.mirrorHorizontal() }
+                ),
+                longSlideActions = original.longSlideActions.copy(
+                    actions = original.longSlideActions.actions.mapKeys { (direction, _) -> direction.mirrorHorizontal() }
+                ),
+                longSlideActionPanelStyles = original.longSlideActionPanelStyles.copy(
+                    styles = original.longSlideActionPanelStyles.styles.mapKeys { (direction, _) -> direction.mirrorHorizontal() }
+                ),
                 angle = original.angle.copy(
                     boundaries = original.angle.boundaries.let { b ->
                         listOf(3, 2, 1, 0, 7, 6, 5, 4).map { i -> ((0.5f - b[i]) + 1f) % 1f }
@@ -136,12 +136,22 @@ class SubGestureSettingsVM(savedStateHandle: SavedStateHandle) : BaseComposeVM<S
         }
     }
 
-    fun onSubVibrateChange(value: Boolean) = updateSubGesture { copy(vibrate = value) }
+    fun onSubSlideVibrateChange(value: Boolean) = updateSubGesture { copy(slideVibrate = value) }
+    fun onSubLongSlideVibrateChange(value: Boolean) = updateSubGesture { copy(longSlideVibrate = value) }
     fun onSubVibrateImmediatelyChange(value: Boolean) = updateSubGesture { copy(vibrateImmediately = value) }
     fun onSubVibrationEffectChange(value: VibrationEffects) = updateSubGesture { copy(vibrationEffect = value) }
     fun onSubCustomVibrationMsChange(value: Float) = updateSubGesture { copy(customVibrationMs = value.toLong()) }
     fun onSubTriggerDistanceChange(value: Float) = updateSubGesture { copy(triggerDistance = value.toInt()) }
+    fun onSubLongSlideTriggerDistanceChange(value: Float) = updateSubGesture { copy(longSlideTriggerDistance = value.toInt()) }
+    fun onSubLongSlideTriggerImmediatelyChange(value: Boolean) = updateSubGesture { copy(longSlideTriggerImmediately = value) }
+    fun onSubLongSlideTriggerDelayMsChange(value: Float) = updateSubGesture { copy(longSlideTriggerDelayMs = value.toLong()) }
     fun onSubTimeoutMsChange(value: Float) = updateSubGesture { copy(timeoutMs = value.toLong()) }
+
+    fun updateLongSlideActionPanelStyle(direction: GestureDirection, style: ActionPanelStyles) {
+        updateSubGesture {
+            copy(longSlideActionPanelStyles = longSlideActionPanelStyles.withStyle(direction, style))
+        }
+    }
 
     private fun loadData() {
         viewModelScope.launch {
@@ -161,4 +171,15 @@ class SubGestureSettingsVM(savedStateHandle: SavedStateHandle) : BaseComposeVM<S
         lateinit var context: android.content.Context
         fun init(ctx: android.content.Context) { context = ctx }
     }
+}
+
+private fun GestureDirection.mirrorHorizontal(): GestureDirection = when (this) {
+    GestureDirection.Left -> GestureDirection.Right
+    GestureDirection.Right -> GestureDirection.Left
+    GestureDirection.UpLeft -> GestureDirection.UpRight
+    GestureDirection.UpRight -> GestureDirection.UpLeft
+    GestureDirection.DownLeft -> GestureDirection.DownRight
+    GestureDirection.DownRight -> GestureDirection.DownLeft
+    GestureDirection.Up -> GestureDirection.Up
+    GestureDirection.Down -> GestureDirection.Down
 }

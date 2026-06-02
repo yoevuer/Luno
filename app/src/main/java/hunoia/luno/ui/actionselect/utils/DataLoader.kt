@@ -27,6 +27,51 @@ internal suspend fun saveSettingsAction(
     getUiState: () -> UiState,
     updateUiState: ((UiState) -> UiState) -> Unit
 ) {
+    fun List<Action>.shortcutIconPaths(): List<String> {
+        return flatMap { action ->
+            listOfNotNull(
+                action.shortcutInfo?.iconPath,
+                action.longPressAction?.shortcutInfo?.iconPath
+            )
+        }.filter { it.isNotEmpty() }
+    }
+    fun tryDeleteShortcutIcons(old: List<Action>, new: List<Action>) {
+        val newPaths = new.shortcutIconPaths().toSet()
+        old.forEach { action ->
+            listOfNotNull(action.shortcutInfo, action.longPressAction?.shortcutInfo).forEach { shortcutInfo ->
+                if (shortcutInfo.iconPath.isNullOrEmpty()) return@forEach
+                if (shortcutInfo.iconPath in newPaths) return@forEach
+                File(shortcutInfo.iconPath).delete()
+            }
+        }
+    }
+    val selectedRecord = getUiState().selectedRecord
+    val selectedList = selectedRecord.list.filterIsInstance<Action>()
+    val newActions = when (getUiState().selectSingle) {
+        true -> selectedList.takeLast(1)
+        else -> selectedList
+    }
+    if (actionSelect.subGestureId.isNotBlank()) {
+        ConfigProvider.updateSubGestureSettings { settings ->
+            settings.copy(
+                subGestures = settings.subGestures.map { gesture ->
+                    if (gesture.id != actionSelect.subGestureId) return@map gesture
+                    val oldActions = if (actionSelect.isLongSlide) {
+                        gesture.longSlideActionsFor(actionSelect.direction)
+                    } else {
+                        gesture.slideActionsFor(actionSelect.direction)
+                    }
+                    tryDeleteShortcutIcons(oldActions, newActions)
+                    if (actionSelect.isLongSlide) {
+                        gesture.withLongSlideActions(actionSelect.direction, newActions)
+                    } else {
+                        gesture.withSlideActions(actionSelect.direction, newActions)
+                    }
+                }
+            )
+        }
+        return
+    }
     val buttonsUpdater = ConfigProvider::updateGestureButtons
     buttonsUpdater { list ->
         val mutableList = list.toMutableList()
@@ -43,34 +88,10 @@ internal suspend fun saveSettingsAction(
         if (button == null) {
             return@buttonsUpdater mutableList
         }
-        val selectedRecord = getUiState().selectedRecord
-        val selectedList = selectedRecord.list.filterIsInstance<Action>()
-        val newActions = when (getUiState().selectSingle) {
-            true -> selectedList.takeLast(1)
-            else -> selectedList
-        }
         val gestureActions = when {
             actionSelect.isTap || actionSelect.isLongPress -> DirectionActions()
             actionSelect.isLongSlide -> button.longSlideActions
             else -> button.slideActions
-        }
-        fun tryDeleteShortcutIcons(old: List<Action>, new: List<Action>) {
-            fun List<Action>.shortcutIconPaths(): List<String> {
-                return flatMap { action ->
-                    listOfNotNull(
-                        action.shortcutInfo?.iconPath,
-                        action.longPressAction?.shortcutInfo?.iconPath
-                    )
-                }.filter { it.isNotEmpty() }
-            }
-            val newPaths = new.shortcutIconPaths().toSet()
-            old.forEach { action ->
-                listOfNotNull(action.shortcutInfo, action.longPressAction?.shortcutInfo).forEach { shortcutInfo ->
-                    if (shortcutInfo.iconPath.isNullOrEmpty()) return@forEach
-                    if (shortcutInfo.iconPath in newPaths) return@forEach
-                    File(shortcutInfo.iconPath).delete()
-                }
-            }
         }
         val oldActions = when {
             actionSelect.isTap -> button.tapActions
@@ -262,26 +283,41 @@ internal suspend fun loadDataBody(
     val button = buttons.find {
         it.id == actionSelect.gestureButtonId
     }
+    val subGesture = subGestures.find { it.id == actionSelect.subGestureId }
     onUpdateState { state ->
-        val selectSingle = !actionSelect.isLongSlide || (button != null && !button.longSlideTriggerImmediately)
+        val selectSingle = when {
+            subGesture != null -> !actionSelect.isLongSlide || !subGesture.longSlideTriggerImmediately
+            else -> !actionSelect.isLongSlide || (button != null && !button.longSlideTriggerImmediately)
+        }
         state.copy(
             selectSingle = selectSingle,
             maxSelectCount = if (selectSingle) 1 else LONG_SLIDE_SOFT_MAX_SELECT_COUNT,
             subGestures = subGestures,
+            excludedSubGestureId = actionSelect.subGestureId,
             actionLibraryEntries = actionLibraryEntries,
         )
     }
-    if (button != null) {
-        val gestureActions = when {
+    val actions = when {
+        subGesture != null -> if (actionSelect.isLongSlide) {
+            subGesture.longSlideActionsFor(actionSelect.direction)
+        } else {
+            subGesture.slideActionsFor(actionSelect.direction)
+        }
+        button != null -> {
+            val gestureActions = when {
             actionSelect.isTap || actionSelect.isLongPress -> DirectionActions()
             actionSelect.isLongSlide -> button.longSlideActions
             else -> button.slideActions
         }
-        val actions = when {
+            when {
             actionSelect.isTap -> button.tapActions
             actionSelect.isLongPress -> button.longPressActions
             else -> gestureActions.actionsBy(actionSelect.direction)
+            }
         }
+        else -> null
+    }
+    if (actions != null) {
         onUpdateState { state ->
             val selectedActions = when (state.selectSingle) {
                 true -> emptyList()

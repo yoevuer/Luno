@@ -1,7 +1,6 @@
 package hunoia.luno.ui.navigation
 
 import androidx.annotation.Keep
-import hunoia.luno.config.model.SubGestureDirection
 import hunoia.luno.config.model.GestureDirection
 import kotlinx.serialization.Serializable
 
@@ -15,6 +14,7 @@ data class ActionSelect(
     val isLongSlide: Boolean,
     val isTap: Boolean = false,
     val isLongPress: Boolean = false,
+    val subGestureId: String = "",
 )
 
 @Serializable
@@ -39,13 +39,6 @@ data object ActionSettings
 @Serializable
 data class SubGestureEditor(
     val subGestureId: String
-)
-
-@Keep
-@Serializable
-data class SubGestureActionSelect(
-    val id: String,
-    val direction: SubGestureDirection
 )
 
 @Keep

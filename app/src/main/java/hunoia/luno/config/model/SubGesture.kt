@@ -4,7 +4,6 @@ import android.graphics.Color
 import androidx.annotation.Keep
 import hunoia.luno.bridge.DensityProvider
 import hunoia.luno.config.defaults.GestureSettingsDefaults.SubGestureTimeoutMs
-import hunoia.luno.config.model.SubGestureDirection
 import hunoia.luno.bridge.vibration.VibrationEffects
 import kotlinx.serialization.Serializable
 
@@ -14,43 +13,30 @@ data class SubGesture(
     val id: String,
     val name: String = "",
     val angle: SubGestureAngle = SubGestureAngle(),
-    val upAction: Action? = null,
-    val downAction: Action? = null,
-    val leftAction: Action? = null,
-    val rightAction: Action? = null,
-    val upRightAction: Action? = null,
-    val downRightAction: Action? = null,
-    val downLeftAction: Action? = null,
-    val upLeftAction: Action? = null,
+    val slideActions: DirectionActions = DirectionActions(),
+    val longSlideActions: DirectionActions = DirectionActions(),
+    val longSlideActionPanelStyles: LongSlideActionPanelStyles = LongSlideActionPanelStyles(),
     val enabled: Boolean = true,
     val color: Int = Color.TRANSPARENT,
-    val vibrate: Boolean = true,
+    val slideVibrate: Boolean = true,
+    val longSlideVibrate: Boolean = true,
     val vibrateImmediately: Boolean = false,
     val vibrationEffect: VibrationEffects = VibrationEffects.Click,
     val customVibrationMs: Long = 50L,
     val actionSettingsOverride: GestureButtonActionSettingsOverride = GestureButtonActionSettingsOverride(),
     val timeoutMs: Long = SubGestureTimeoutMs,
     val triggerDistance: Int = DensityProvider.dp2px(30f),
+    val longSlideTriggerDistance: Int = DensityProvider.dp2px(100f),
+    val longSlideTriggerImmediately: Boolean = true,
+    val longSlideTriggerDelayMs: Long = 100L,
 ) {
-    fun actionFor(direction: SubGestureDirection): Action? = when (direction) {
-        SubGestureDirection.Up -> upAction
-        SubGestureDirection.Down -> downAction
-        SubGestureDirection.Left -> leftAction
-        SubGestureDirection.Right -> rightAction
-        SubGestureDirection.UpRight -> upRightAction
-        SubGestureDirection.DownRight -> downRightAction
-        SubGestureDirection.DownLeft -> downLeftAction
-        SubGestureDirection.UpLeft -> upLeftAction
-    }
+    fun slideActionsFor(direction: GestureDirection): List<Action> = slideActions.actionsBy(direction)
 
-    fun withAction(direction: SubGestureDirection, action: Action?): SubGesture = when (direction) {
-        SubGestureDirection.Up -> copy(upAction = action)
-        SubGestureDirection.Down -> copy(downAction = action)
-        SubGestureDirection.Left -> copy(leftAction = action)
-        SubGestureDirection.Right -> copy(rightAction = action)
-        SubGestureDirection.UpRight -> copy(upRightAction = action)
-        SubGestureDirection.DownRight -> copy(downRightAction = action)
-        SubGestureDirection.DownLeft -> copy(downLeftAction = action)
-        SubGestureDirection.UpLeft -> copy(upLeftAction = action)
-    }
+    fun longSlideActionsFor(direction: GestureDirection): List<Action> = longSlideActions.actionsBy(direction)
+
+    fun withSlideActions(direction: GestureDirection, newActions: List<Action>): SubGesture =
+        copy(slideActions = slideActions.withActions(direction, newActions))
+
+    fun withLongSlideActions(direction: GestureDirection, newActions: List<Action>): SubGesture =
+        copy(longSlideActions = longSlideActions.withActions(direction, newActions))
 }

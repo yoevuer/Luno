@@ -203,6 +203,7 @@ fun MySlider(
     valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
     steps: Int? = null,
 ) {
+    val coercedValue = value.coerceIn(valueRange.start, valueRange.endInclusive)
     val colorScheme = MaterialTheme.colorScheme
     val interactionSource = remember { MutableInteractionSource() }
     val colors = SliderDefaults.colors(thumbColor = colorScheme.tertiary)
@@ -228,7 +229,7 @@ fun MySlider(
     Slider(
         modifier = modifier,
         enabled = enabled,
-        value = value,
+        value = coercedValue,
         onValueChange = { if (isDragging) safeOnValueChange(it) },
         onValueChangeFinished = { },
         interactionSource = interactionSource,
@@ -275,6 +276,8 @@ fun MyRangeSlider(
     onValueChangeFinished: (() -> Unit)? = null,
     valueRange: ClosedFloatingPointRange<Float> = 0f..1f
 ) {
+    val coercedValue = value.start.coerceIn(valueRange.start, valueRange.endInclusive)..
+        value.endInclusive.coerceIn(valueRange.start, valueRange.endInclusive)
     val colorScheme = MaterialTheme.colorScheme
     val startInteractionSource = remember { MutableInteractionSource() }
     val endInteractionSource = remember { MutableInteractionSource() }
@@ -300,7 +303,7 @@ fun MyRangeSlider(
     RangeSlider(
         modifier = modifier,
         enabled = enabled,
-        value = value,
+        value = coercedValue,
         onValueChange = onValueChange,
         onValueChangeFinished = onValueChangeFinished,
         startInteractionSource = startInteractionSource,

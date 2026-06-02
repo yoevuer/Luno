@@ -36,9 +36,9 @@ class DirectionAngleTest {
     fun subGestureAngle_usesSameDefaultBoundaries() {
         val angle = SubGestureAngle()
 
-        assertEquals(SubGestureDirection.Right, angle.directionOf(Offset(1f, 0f)))
-        assertEquals(SubGestureDirection.UpRight, angle.directionOf(offsetAtDegrees(45f)))
-        assertEquals(SubGestureDirection.Up, angle.directionOf(Offset(0f, -1f)))
+        assertEquals(GestureDirection.Right, angle.directionOf(Offset(1f, 0f)))
+        assertEquals(GestureDirection.UpRight, angle.directionOf(offsetAtDegrees(45f)))
+        assertEquals(GestureDirection.Up, angle.directionOf(Offset(0f, -1f)))
     }
 
     @Test

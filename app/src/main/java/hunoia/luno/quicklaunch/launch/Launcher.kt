@@ -116,7 +116,7 @@ object Launcher {
                     launchAppActivity(context, data.packageName, data.activityClassName)
                 }
             }
-            OpenAppOrUrlData.TYPE_URL -> launchUrl(context, data.url)
+            OpenAppOrUrlData.TYPE_URL -> launchUrl(context, data)
             else -> {
                 showToast(context.getString(R.string.launch_failed))
                 false
@@ -125,30 +125,40 @@ object Launcher {
     }
 
     fun launchUrl(context: Context, url: String): Boolean {
+        return launchUrl(context, OpenAppOrUrlData(type = OpenAppOrUrlData.TYPE_URL, url = url))
+    }
+
+    fun launchUrl(
+        context: Context,
+        data: OpenAppOrUrlData,
+        miniWindowHorizontalBias: Float = DefaultMiniWindowHorizontalBias,
+        miniWindowVerticalBias: Float = DefaultMiniWindowVerticalBias,
+        miniWindowVerticalOffsetFraction: Float = DefaultMiniWindowVerticalOffsetFraction,
+        miniWindowWidthFraction: Float = DefaultMiniWindowWidthFraction,
+        miniWindowHeightFraction: Float = DefaultMiniWindowHeightFraction,
+        miniWindowOverrideBounds: Boolean = false,
+    ): Boolean {
         return try {
-            val normalizedUrl = normalizeOpenAppOrUrl(url) ?: run {
+            val normalizedUrl = buildOpenUrl(data) ?: run {
                 showToast(context.getString(R.string.invalid_url))
                 return false
             }
-            if (normalizedUrl.startsWith("intent:")) {
-                val intent = Intent.parseUri(normalizedUrl, Intent.URI_INTENT_SCHEME).apply {
-                    addCategory(Intent.CATEGORY_BROWSABLE)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                if (intent.resolveActivity(context.packageManager) == null) {
-                    showToast(context.getString(R.string.launch_failed))
-                    return false
-                }
-                context.startActivity(intent)
-                return true
-            }
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(normalizedUrl)).apply {
-                addCategory(Intent.CATEGORY_BROWSABLE)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
+            val intent = openUrlIntent(normalizedUrl)
             if (intent.resolveActivity(context.packageManager) == null) {
                 showToast(context.getString(R.string.launch_failed))
                 return false
+            }
+            if (data.miniWindow) {
+                return MiniWindow.startActivity(
+                    context = context,
+                    intent = intent,
+                    horizontalBias = miniWindowHorizontalBias,
+                    verticalBias = miniWindowVerticalBias,
+                    verticalOffsetFraction = miniWindowVerticalOffsetFraction,
+                    widthFraction = miniWindowWidthFraction,
+                    heightFraction = miniWindowHeightFraction,
+                    overrideBounds = miniWindowOverrideBounds,
+                )
             }
             context.startActivity(intent)
             true
@@ -168,6 +178,22 @@ object Launcher {
         val candidate = if (hasExplicitScheme || trimmed.contains("://")) trimmed else "https://$trimmed"
         val uri = runCatching { Uri.parse(candidate) }.getOrNull() ?: return null
         return if (uri.scheme.isNullOrBlank()) null else candidate
+    }
+
+    internal fun buildOpenUrl(data: OpenAppOrUrlData): String? {
+        val normalizedUrl = normalizeOpenAppOrUrl(data.url) ?: return null
+        return OpenUrlBuilder.build(normalizedUrl, data)
+    }
+
+    private fun openUrlIntent(normalizedUrl: String): Intent {
+        return when {
+            normalizedUrl.startsWith("intent:") -> Intent.parseUri(normalizedUrl, Intent.URI_INTENT_SCHEME)
+            normalizedUrl.startsWith("android-app:") -> Intent.parseUri(normalizedUrl, Intent.URI_ANDROID_APP_SCHEME)
+            else -> Intent(Intent.ACTION_VIEW, Uri.parse(normalizedUrl))
+        }.apply {
+            addCategory(Intent.CATEGORY_BROWSABLE)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
     }
 
     fun launchAppInPopup(
@@ -226,6 +252,32 @@ private object MiniWindow {
                 addCategory(Intent.CATEGORY_LAUNCHER)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
+            val realSize = getRealScreenSize(context)
+            val activityOptions = makeActivityOptions(
+                horizontalBias, verticalBias, verticalOffsetFraction,
+                widthFraction, heightFraction,
+                realSize.x, realSize.y,
+                overrideBounds = overrideBounds,
+            )
+            context.startActivity(intent, activityOptions.toBundle())
+            true
+        } catch (ignored: Exception) {
+            showToast(context.getString(R.string.launch_mini_window_failed))
+            false
+        }
+    }
+
+    fun startActivity(
+        context: Context,
+        intent: Intent,
+        horizontalBias: Float,
+        verticalBias: Float,
+        verticalOffsetFraction: Float,
+        widthFraction: Float,
+        heightFraction: Float,
+        overrideBounds: Boolean,
+    ): Boolean {
+        return try {
             val realSize = getRealScreenSize(context)
             val activityOptions = makeActivityOptions(
                 horizontalBias, verticalBias, verticalOffsetFraction,

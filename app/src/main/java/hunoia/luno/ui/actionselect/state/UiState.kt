@@ -22,6 +22,7 @@ data class UiState(
     val longPressTargetIndex: Int? = null,
     val actionSettingsDialog: ActionSettingsDialogValue = ActionSettingsDialogValue(false, Action.NONE),
     val subGestures: List<SubGesture> = emptyList(),
+    val excludedSubGestureId: String = "",
     val actionLibraryEntries: List<ActionLibraryEntry> = emptyList(),
 ) {
     data class SelectedRecord(val list: List<Any> = emptyList()) {

@@ -1,4 +1,4 @@
-package hunoia.luno.action.handlers
+package hunoia.luno.quicklaunch.launch
 
 import hunoia.luno.config.model.OpenAppOrUrlData
 import hunoia.luno.config.model.OpenUrlQueryParameter

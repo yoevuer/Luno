@@ -16,7 +16,6 @@ import hunoia.luno.config.model.SubGestureSettings
 import hunoia.luno.config.model.InitialSettings
 import hunoia.luno.config.model.QuickAppLauncherSettings
 import hunoia.luno.config.model.SubGesture
-import hunoia.luno.config.model.SubGestureDirection
 import hunoia.luno.core.AppContext
 import hunoia.luno.config.model.GestureButton
 import hunoia.luno.core.JsonSerializer
@@ -221,10 +220,10 @@ object ConfigProvider {
     }
 
     private fun SubGesture.cleanActionLibraryRef(entryId: String): SubGesture {
-        return SubGestureDirection.entries.fold(this) { gesture, direction ->
-            val action = gesture.actionFor(direction)
-            gesture.withAction(direction, action?.takeUnless { it.isActionLibraryRef(entryId) })
-        }
+        return copy(
+            slideActions = slideActions.cleanActionLibraryRef(entryId),
+            longSlideActions = longSlideActions.cleanActionLibraryRef(entryId),
+        )
     }
 
     private fun Action.isActionLibraryRef(entryId: String): Boolean {

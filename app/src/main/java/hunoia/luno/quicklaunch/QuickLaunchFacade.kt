@@ -2,6 +2,7 @@ package hunoia.luno.quicklaunch
 
 import android.content.Context
 import android.graphics.drawable.Drawable
+import hunoia.luno.config.model.OpenAppOrUrlData
 import hunoia.luno.quicklaunch.model.AppInfo
 import hunoia.luno.quicklaunch.model.LauncherInfo
 import hunoia.luno.quicklaunch.query.AppQuery
@@ -120,6 +121,28 @@ object QuickLaunchFacade {
 
     fun launchAppActivityDirect(context: Context, packageName: String, className: String): Boolean {
         return Launcher.launchAppActivity(context, packageName, className)
+    }
+
+    fun launchUrlDirect(
+        context: Context,
+        data: OpenAppOrUrlData,
+        miniWindowHorizontalBias: Float = 0f,
+        miniWindowVerticalBias: Float = 0f,
+        miniWindowVerticalOffsetFraction: Float = 0f,
+        miniWindowWidthFraction: Float = 0.46f,
+        miniWindowHeightFraction: Float = 0.74f,
+        miniWindowOverrideBounds: Boolean = false,
+    ): Boolean {
+        return Launcher.launchUrl(
+            context = context,
+            data = data,
+            miniWindowHorizontalBias = miniWindowHorizontalBias,
+            miniWindowVerticalBias = miniWindowVerticalBias,
+            miniWindowVerticalOffsetFraction = miniWindowVerticalOffsetFraction,
+            miniWindowWidthFraction = miniWindowWidthFraction,
+            miniWindowHeightFraction = miniWindowHeightFraction,
+            miniWindowOverrideBounds = miniWindowOverrideBounds,
+        )
     }
 
     fun queryCombinedQuickAppList(context: Context, frozenApps: List<AppInfo>): QuickAppLauncherAppList {

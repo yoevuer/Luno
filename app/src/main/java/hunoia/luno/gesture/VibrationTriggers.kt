@@ -43,9 +43,17 @@ fun GestureButton.tryVibrateForLongPress() {
 }
 
 @RequiresPermission(VIBRATE)
-fun SubGesture.tryVibrate() {
+fun SubGesture.tryVibrateForSlide() {
     val ctx = appContext ?: return
-    if (vibrate) {
+    if (slideVibrate) {
+        vibrate(ctx, vibrationEffect, customVibrationMs)
+    }
+}
+
+@RequiresPermission(VIBRATE)
+fun SubGesture.tryVibrateForLongSlide() {
+    val ctx = appContext ?: return
+    if (longSlideVibrate) {
         vibrate(ctx, vibrationEffect, customVibrationMs)
     }
 }
@@ -57,4 +65,3 @@ fun vibrateForActionPanel(gestureSettings: GestureSettings) {
         vibrate(ctx, DEFAULT_VIBRATION_EFFECT, DEFAULT_VIBRATION_MS)
     }
 }
-

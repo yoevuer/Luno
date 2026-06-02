@@ -1,4 +1,4 @@
-package hunoia.luno.action.handlers
+package hunoia.luno.quicklaunch.launch
 
 import hunoia.luno.config.model.OpenAppOrUrlData
 import hunoia.luno.config.model.OpenUrlQueryParameter
@@ -100,5 +100,19 @@ class OpenUrlBuilderTest {
         )
 
         assertEquals("https://example.com/path", result)
+    }
+
+    @Test
+    fun build_appendsMiniWindowBeforeCustomParameters() {
+        val result = OpenUrlBuilder.build(
+            rawUrl = "https://example.com/path",
+            data = OpenAppOrUrlData(
+                type = OpenAppOrUrlData.TYPE_URL,
+                miniWindow = true,
+                queryParameters = listOf(OpenUrlQueryParameter(name = "k", value = "v")),
+            ),
+        )
+
+        assertEquals("https://example.com/path?miniWindow=true&k=v", result)
     }
 }

@@ -9,6 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import hunoia.luno.R
+import hunoia.luno.config.model.ActionPanelStyles
 import hunoia.luno.config.model.GestureButton
 import hunoia.luno.config.model.GestureDirection
 import hunoia.luno.gesture.GestureFacade
@@ -19,7 +20,7 @@ import hunoia.luno.ui.navigation.ActionSelect
 import hunoia.luno.ui.settings.gesture.style.MySideGestureSettings
 import hunoia.luno.ui.settings.gesture.style.StyleTrailingButton
 
-private val directions = listOf(
+val actionCardDirections = listOf(
     GestureDirection.Left,
     GestureDirection.UpLeft,
     GestureDirection.Up,
@@ -41,23 +42,19 @@ fun GestureButtonSlideActionsCard(
         subtitle = stringResource(id = R.string.slide_actions_subtitle),
         onClick = {},
     ) {
-        directions.forEach { direction ->
-            MySideGestureSettings(
-                onClick = {
-                    onNavToActionSelect(
-                        ActionSelect(
-                            gestureButtonId = gestureButton.id,
-                            direction = direction,
-                            isLongSlide = false,
-                        )
+        SlideActionRows(
+            styleGestureButton = gestureButton,
+            actionsText = { direction -> gestureButton.slideActions.actionsBy(direction).actionTextCompose() },
+            onDirectionClick = { direction ->
+                onNavToActionSelect(
+                    ActionSelect(
+                        gestureButtonId = gestureButton.id,
+                        direction = direction,
+                        isLongSlide = false,
                     )
-                },
-                gestureButton = gestureButton,
-                direction = direction,
-                isLongSlide = false,
-                secondaryText = gestureButton.slideActions.actionsBy(direction).actionTextCompose(),
-            )
-        }
+                )
+            },
+        )
     }
 }
 
@@ -73,29 +70,63 @@ fun GestureButtonLongSlideActionsCard(
         subtitle = stringResource(id = R.string.long_slide_subtitle),
         onClick = {},
     ) {
-        directions.forEach { direction ->
-            MySideGestureSettings(
-                onClick = {
-                    onNavToActionSelect(
-                        ActionSelect(
-                            gestureButtonId = gestureButton.id,
-                            direction = direction,
-                            isLongSlide = true,
-                        )
+        LongSlideActionRows(
+            styleGestureButton = gestureButton,
+            actionsText = { direction -> gestureButton.longSlideActions.actionsBy(direction).actionTextCompose() },
+            currentStyle = { direction -> GestureFacade.styleBy(gestureButton.longSlideActionPanelStyles, direction) },
+            onDirectionClick = { direction ->
+                onNavToActionSelect(
+                    ActionSelect(
+                        gestureButtonId = gestureButton.id,
+                        direction = direction,
+                        isLongSlide = true,
                     )
-                },
-                gestureButton = gestureButton,
-                direction = direction,
-                isLongSlide = true,
-                secondaryText = gestureButton.longSlideActions.actionsBy(direction).actionTextCompose(),
-                trailing = {
-                    StyleTrailingButton(
-                        currentStyle = GestureFacade.styleBy(gestureButton.longSlideActionPanelStyles, direction),
-                        onClick = { onStyleSelect(direction) }
-                    )
-                }
-            )
-        }
+                )
+            },
+            onStyleSelect = onStyleSelect,
+        )
+    }
+}
+
+@Composable
+fun SlideActionRows(
+    styleGestureButton: GestureButton,
+    actionsText: @Composable (GestureDirection) -> String,
+    onDirectionClick: (GestureDirection) -> Unit,
+) {
+    actionCardDirections.forEach { direction ->
+        MySideGestureSettings(
+            onClick = { onDirectionClick(direction) },
+            gestureButton = styleGestureButton,
+            direction = direction,
+            isLongSlide = false,
+            secondaryText = actionsText(direction),
+        )
+    }
+}
+
+@Composable
+fun LongSlideActionRows(
+    styleGestureButton: GestureButton,
+    actionsText: @Composable (GestureDirection) -> String,
+    currentStyle: (GestureDirection) -> ActionPanelStyles,
+    onDirectionClick: (GestureDirection) -> Unit,
+    onStyleSelect: (GestureDirection) -> Unit,
+) {
+    actionCardDirections.forEach { direction ->
+        MySideGestureSettings(
+            onClick = { onDirectionClick(direction) },
+            gestureButton = styleGestureButton,
+            direction = direction,
+            isLongSlide = true,
+            secondaryText = actionsText(direction),
+            trailing = {
+                StyleTrailingButton(
+                    currentStyle = currentStyle(direction),
+                    onClick = { onStyleSelect(direction) }
+                )
+            }
+        )
     }
 }
 

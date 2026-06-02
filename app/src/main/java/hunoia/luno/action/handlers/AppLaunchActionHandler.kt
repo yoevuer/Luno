@@ -1,9 +1,7 @@
 package hunoia.luno.action.handlers
 
 import android.content.Intent
-import android.content.ActivityNotFoundException
 import android.content.pm.PackageManager
-import android.net.Uri
 import hunoia.luno.R
 import hunoia.luno.action.api.ActionExecutionResult
 import hunoia.luno.action.api.ActionHandler
@@ -105,28 +103,18 @@ object AppLaunchActionHandler : ActionHandler {
         } catch (e: Exception) {
             null
         }
-        val raw = data?.url?.trim() ?: return ActionExecutionResult.Ignored
-        if (raw.isBlank()) return ActionExecutionResult.Ignored
-        val finalUrl = OpenUrlBuilder.build(raw, data)
-        return try {
-            val intent = when {
-                finalUrl.startsWith("intent:") ->
-                    Intent.parseUri(finalUrl, Intent.URI_INTENT_SCHEME)
-                finalUrl.startsWith("android-app:") ->
-                    Intent.parseUri(finalUrl, Intent.URI_ANDROID_APP_SCHEME)
-                else ->
-                    Intent(Intent.ACTION_VIEW, Uri.parse(finalUrl).normalizeScheme())
-            }
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.appContext.startActivity(intent)
-            ActionExecutionResult.Success
-        } catch (e: ActivityNotFoundException) {
-            ActionExecutionResult.Failed("Activity not found")
-        } catch (e: IllegalArgumentException) {
-            ActionExecutionResult.Failed("Invalid URI")
-        } catch (e: SecurityException) {
-            ActionExecutionResult.Failed("Security denied")
-        }
+        if (data?.url?.isBlank() != false) return ActionExecutionResult.Ignored
+        val success = QuickLaunchFacade.launchUrlDirect(
+            context = context.appContext,
+            data = data,
+            miniWindowHorizontalBias = context.advancedSettings.miniWindowHorizontalBias,
+            miniWindowVerticalBias = context.advancedSettings.miniWindowVerticalBias,
+            miniWindowVerticalOffsetFraction = context.advancedSettings.miniWindowVerticalOffsetFraction,
+            miniWindowWidthFraction = context.advancedSettings.miniWindowWidthFraction,
+            miniWindowHeightFraction = context.advancedSettings.miniWindowHeightFraction,
+            miniWindowOverrideBounds = context.advancedSettings.miniWindowOverrideBounds,
+        )
+        return if (success) ActionExecutionResult.Success else ActionExecutionResult.Failed("Launch URL failed")
     }
 
     private fun launchAppWithFrozenSupport(

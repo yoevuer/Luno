@@ -13,7 +13,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Gesture
 import androidx.compose.material.icons.filled.Straighten
-import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material.icons.filled.Swipe
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,18 +32,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.fastForEach
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aaron.compose.component.UDFComponent
 import hunoia.luno.R
-import hunoia.luno.ui.component.actionText
-import hunoia.luno.action.payload.SubGestureActionData
-import hunoia.luno.config.model.Action
-import hunoia.luno.config.model.SubGestureDirection
-import hunoia.luno.ui.component.displayNameRes
+import hunoia.luno.ui.component.actionTextCompose
+import hunoia.luno.config.model.GestureButton
+import hunoia.luno.config.model.GestureDirection
 import hunoia.luno.config.defaults.SettingsUiDefaults.GestureButtonColorAlpha
 import hunoia.luno.config.model.SubGesture
-import hunoia.luno.ui.navigation.SubGestureActionSelect
+import hunoia.luno.gesture.GestureFacade
+import hunoia.luno.ui.navigation.ActionSelect
 import hunoia.luno.ui.component.MyAlertDialog
 import hunoia.luno.ui.component.OptimizedBottomSheet
 import hunoia.luno.ui.component.ExpressiveCard
@@ -72,18 +70,25 @@ import hunoia.luno.bridge.vibration.MinCustomVibrationMs
 import hunoia.luno.bridge.vibration.VibrationEffects
 import hunoia.luno.ui.settings.gesture.subgesture.SubGestureSettingsUiEvent
 import hunoia.luno.ui.settings.gesture.subgesture.SubGestureSettingsUiState
+import hunoia.luno.ui.settings.gesture.button.LongSlideActionRows
+import hunoia.luno.ui.settings.gesture.button.GestureSlideTriggerDistanceContent
+import hunoia.luno.ui.settings.gesture.button.SlideActionRows
 import hunoia.luno.ui.settings.gesture.button.VibrationEffectSelector
+import hunoia.luno.ui.settings.gesture.style.ActionPanelStyleConfigContent
+import hunoia.luno.ui.settings.gesture.style.ActionPanelStyleSelectContent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SubGestureSettingsScreen(
     onBack: () -> Unit,
-    onNavToSubGestureActionSelect: (SubGestureActionSelect) -> Unit = {},
+    onNavToActionSelect: (ActionSelect) -> Unit = {},
     vm: SubGestureSettingsVM = viewModel()
 ) {
     var showGestureAngles by remember { mutableStateOf(false) }
     var showSubVibrationSettings by remember { mutableStateOf(false) }
     var showSubTriggerDistanceSettings by remember { mutableStateOf(false) }
+    var showStyleSelectFor by remember { mutableStateOf<GestureDirection?>(null) }
+    var showStyleConfigFor by remember { mutableStateOf<GestureDirection?>(null) }
     UDFComponent<SubGestureSettingsUiState, SubGestureSettingsUiEvent>(component = vm.udfComponent, onEvent = { }) { uiState ->
         if (uiState.showDeleteWarningDialog) {
             MyAlertDialog(
@@ -142,6 +147,38 @@ fun SubGestureSettingsScreen(
             }
         }
 
+        showStyleSelectFor?.let { direction ->
+            val currentStyle = GestureFacade.styleBy(gesture.longSlideActionPanelStyles, direction)
+            OptimizedBottomSheet(
+                onDismissRequest = { showStyleSelectFor = null }
+            ) {
+                ActionPanelStyleSelectContent(
+                    currentStyle = currentStyle,
+                    onStyleSelected = { style ->
+                        vm.updateLongSlideActionPanelStyle(direction, style)
+                    },
+                    onConfigRequest = { _ ->
+                        showStyleSelectFor = null
+                        showStyleConfigFor = direction
+                    }
+                )
+            }
+        }
+
+        showStyleConfigFor?.let { direction ->
+            val currentStyle = GestureFacade.styleBy(gesture.longSlideActionPanelStyles, direction)
+            OptimizedBottomSheet(
+                onDismissRequest = { showStyleConfigFor = null }
+            ) {
+                ActionPanelStyleConfigContent(
+                    currentStyle = currentStyle,
+                    onStyleChanged = { style ->
+                        vm.updateLongSlideActionPanelStyle(direction, style)
+                    }
+                )
+            }
+        }
+
         Scaffold(topBar = {
             TopBar(
                 onBack = onBack,
@@ -177,36 +214,63 @@ fun SubGestureSettingsScreen(
                 modifier = Modifier.padding(innerPadding),
                 verticalArrangement = Arrangement.spacedBy(Spacing12)
             ) {
+                val styleGestureButton = remember(gesture.id, gesture.color, gesture.longSlideActionPanelStyles) {
+                    GestureButton(
+                        id = gesture.id,
+                        color = gesture.color,
+                        longSlideActionPanelStyles = gesture.longSlideActionPanelStyles,
+                    )
+                }
                 ExpressiveCard(
-                    icon = Icons.Default.TouchApp,
-                    title = stringResource(id = R.string.direction_actions),
-                    subtitle = stringResource(id = R.string.direction_actions_subtitle),
+                    icon = Icons.Default.Swipe,
+                    title = stringResource(id = R.string.slide_action),
+                    subtitle = stringResource(id = R.string.slide_actions_subtitle),
                     onClick = {},
                 ) {
-                    val directions = listOf(
-                        SubGestureDirection.Up, SubGestureDirection.Down,
-                        SubGestureDirection.Left, SubGestureDirection.Right,
-                        SubGestureDirection.UpRight, SubGestureDirection.DownRight,
-                        SubGestureDirection.DownLeft, SubGestureDirection.UpLeft
-                    )
-                    directions.fastForEach { direction ->
-                        val action = gesture.actionFor(direction)
-                        val text = actionDisplayText(action)
-                        ExpressiveRow(
-                            onClick = {
-                                onNavToSubGestureActionSelect(SubGestureActionSelect(gesture.id, direction))
-                            },
-                            text = stringResource(id = direction.displayNameRes),
-                            secondaryText = text.ifEmpty { stringResource(id = R.string.action_none) },
-                            icon = {
-                                Icon(
-                                    imageVector = Icons.Default.Gesture,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
+                    SlideActionRows(
+                        styleGestureButton = styleGestureButton,
+                        actionsText = { direction ->
+                            gesture.slideActionsFor(direction).actionTextCompose()
+                        },
+                        onDirectionClick = { direction ->
+                                onNavToActionSelect(
+                                    ActionSelect(
+                                        gestureButtonId = "",
+                                        direction = direction,
+                                        isLongSlide = false,
+                                        subGestureId = gesture.id,
+                                    )
                                 )
-                            },
-                        )
-                    }
+                        },
+                    )
+                }
+
+                ExpressiveCard(
+                    icon = Icons.Default.Gesture,
+                    title = stringResource(id = R.string.long_slide_action),
+                    subtitle = stringResource(id = R.string.long_slide_subtitle),
+                    onClick = {},
+                ) {
+                    LongSlideActionRows(
+                        styleGestureButton = styleGestureButton,
+                        actionsText = { direction ->
+                            gesture.longSlideActionsFor(direction).actionTextCompose()
+                        },
+                        currentStyle = { direction ->
+                            GestureFacade.styleBy(gesture.longSlideActionPanelStyles, direction)
+                        },
+                        onDirectionClick = { direction ->
+                                onNavToActionSelect(
+                                    ActionSelect(
+                                        gestureButtonId = "",
+                                        direction = direction,
+                                        isLongSlide = true,
+                                        subGestureId = gesture.id,
+                                    )
+                                )
+                        },
+                        onStyleSelect = { direction -> showStyleSelectFor = direction },
+                    )
                 }
 
                 ExpressiveCard(
@@ -257,24 +321,20 @@ fun SubGestureSettingsScreen(
 }
 
 @Composable
-private fun actionDisplayText(action: Action?): String {
-    val actionId = action?.value ?: return ""
-    if (actionId != hunoia.luno.action.api.ActionFacade.SUB_GESTURE) {
-        return actionText(action)
-    }
-    return stringResource(id = R.string.action_sub_gesture)
-}
-
-@Composable
 private fun SubGestureVibrationContent(
     gesture: SubGesture,
     vm: SubGestureSettingsVM
 ) {
     MyColumn(verticalArrangement = Arrangement.spacedBy(Spacing8)) {
         ExpressiveSwitchItem(
-            onCheckedChange = { vm.onSubVibrateChange(it) },
-            checked = gesture.vibrate,
-            title = stringResource(R.string.sub_gesture_vibration)
+            onCheckedChange = { vm.onSubSlideVibrateChange(it) },
+            checked = gesture.slideVibrate,
+            title = stringResource(R.string.vibration_slide)
+        )
+        ExpressiveSwitchItem(
+            onCheckedChange = { vm.onSubLongSlideVibrateChange(it) },
+            checked = gesture.longSlideVibrate,
+            title = stringResource(R.string.vibration_long_slide)
         )
         ExpressiveSwitchItem(
             onCheckedChange = { vm.onSubVibrateImmediatelyChange(it) },
@@ -303,12 +363,16 @@ private fun SubGestureTriggerDistanceContent(
     vm: SubGestureSettingsVM
 ) {
     MyColumn {
-        MyTextSlider(
-            value = gesture.triggerDistance.toFloat(),
-            onValueChange = { vm.onSubTriggerDistanceChange(it) },
-            text = stringResource(R.string.trigger_sub_gesture_distance),
-            valueDisplay = "${gesture.triggerDistance}px",
-            valueRange = MinSubGestureTriggerDistance.toFloat()..MaxSubGestureTriggerDistance.toFloat()
+        GestureSlideTriggerDistanceContent(
+            slideTriggerDistance = gesture.triggerDistance,
+            onSlideTriggerDistanceChange = vm::onSubTriggerDistanceChange,
+            slideTriggerDistanceRange = MinSubGestureTriggerDistance.toFloat()..MaxSubGestureTriggerDistance.toFloat(),
+            longSlideTriggerDistance = gesture.longSlideTriggerDistance,
+            onLongSlideTriggerDistanceChange = vm::onSubLongSlideTriggerDistanceChange,
+            longSlideTriggerImmediately = gesture.longSlideTriggerImmediately,
+            onLongSlideTriggerImmediatelyChange = vm::onSubLongSlideTriggerImmediatelyChange,
+            longSlideTriggerDelayMs = gesture.longSlideTriggerDelayMs,
+            onLongSlideTriggerDelayMsChange = vm::onSubLongSlideTriggerDelayMsChange,
         )
         MyTextSlider(
             value = gesture.timeoutMs.toFloat(),

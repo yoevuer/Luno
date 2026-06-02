@@ -41,7 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import hunoia.luno.R
 import hunoia.luno.config.model.GestureButtonAngle
-import hunoia.luno.config.model.SubGestureDirection
+import hunoia.luno.config.model.GestureDirection
 import hunoia.luno.ui.component.displayNameRes
 import hunoia.luno.config.model.SubGestureAngle
 import hunoia.luno.config.model.copyDirectionAngleBoundary
@@ -64,14 +64,14 @@ fun SubGestureAngleContent(
     color: Color = MaterialTheme.colorScheme.primary
 ) {
     val names = listOf(
-        stringResource(id = SubGestureDirection.UpRight.displayNameRes),
-        stringResource(id = SubGestureDirection.Up.displayNameRes),
-        stringResource(id = SubGestureDirection.UpLeft.displayNameRes),
-        stringResource(id = SubGestureDirection.Left.displayNameRes),
-        stringResource(id = SubGestureDirection.DownLeft.displayNameRes),
-        stringResource(id = SubGestureDirection.Down.displayNameRes),
-        stringResource(id = SubGestureDirection.DownRight.displayNameRes),
-        stringResource(id = SubGestureDirection.Right.displayNameRes)
+        stringResource(id = GestureDirection.UpRight.displayNameRes),
+        stringResource(id = GestureDirection.Up.displayNameRes),
+        stringResource(id = GestureDirection.UpLeft.displayNameRes),
+        stringResource(id = GestureDirection.Left.displayNameRes),
+        stringResource(id = GestureDirection.DownLeft.displayNameRes),
+        stringResource(id = GestureDirection.Down.displayNameRes),
+        stringResource(id = GestureDirection.DownRight.displayNameRes),
+        stringResource(id = GestureDirection.Right.displayNameRes)
     )
     DirectionAngleContent(
         title = stringResource(id = R.string.sub_gesture_angles),

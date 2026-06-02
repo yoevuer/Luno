@@ -9,7 +9,6 @@ import hunoia.luno.config.model.ActionLibraryRefData
 import hunoia.luno.config.model.ActionLibraryType
 import hunoia.luno.config.model.GestureButton
 import hunoia.luno.config.model.SubGesture
-import hunoia.luno.config.model.SubGestureDirection
 import hunoia.luno.core.JsonSerializer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -98,7 +97,8 @@ private fun countReferences(
         button.longPressActions.forEach { add(it); add(it.longPressAction) }
     }
     subGestures.forEach { gesture ->
-        SubGestureDirection.entries.forEach { add(gesture.actionFor(it)) }
+        gesture.slideActions.actions.values.flatten().forEach { add(it); add(it.longPressAction) }
+        gesture.longSlideActions.actions.values.flatten().forEach { add(it); add(it.longPressAction) }
     }
     return counts
 }

@@ -33,7 +33,6 @@ import hunoia.luno.ui.navigation.GestureButtonSettings
 import hunoia.luno.ui.navigation.Home
 import hunoia.luno.ui.navigation.ActionLibrary
 import hunoia.luno.ui.navigation.ActionSettings
-import hunoia.luno.ui.navigation.SubGestureActionSelect
 import hunoia.luno.ui.navigation.SubGestureEditor
 import hunoia.luno.ui.navigation.PointerSettings
 import hunoia.luno.ui.navigation.FrozenManage
@@ -45,7 +44,6 @@ import hunoia.luno.ui.settings.action.ActionSettingsScreen
 
 import hunoia.luno.ui.settings.gesture.button.GestureButtonSettingsScreen
 
-import hunoia.luno.ui.settings.gesture.subgesture.SubGestureActionSelectContent
 import hunoia.luno.ui.settings.gesture.subgesture.SubGestureSettingsScreen
 import hunoia.luno.ui.theme.SideGestureTheme
 import hunoia.luno.ui.navigation.LocalNavController
@@ -137,14 +135,7 @@ fun SideGestureApp() {
                 myComposable<SubGestureEditor> {
                     SubGestureSettingsScreen(
                         onBack = { navController.navigateUp() },
-                        onNavToSubGestureActionSelect = { navController.navigate(it) }
-                    )
-                }
-                myComposable<SubGestureActionSelect> {
-                    SubGestureActionSelectContent(
-                        onDismiss = { navController.popBackStack() },
-                        subGestureId = it.toRoute<SubGestureActionSelect>().id,
-                        direction = it.toRoute<SubGestureActionSelect>().direction
+                        onNavToActionSelect = { navController.navigate(it) }
                     )
                 }
                 myComposable<PointerSettings> {

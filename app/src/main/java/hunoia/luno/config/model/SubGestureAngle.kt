@@ -13,20 +13,20 @@ data class SubGestureAngle(
         validateDirectionAngleBoundaries(boundaries)
     }
 
-    fun directionOf(offset: Offset): SubGestureDirection = directionOf(boundaries, SECTOR_DIRECTIONS, offset)
+    fun directionOf(offset: Offset): GestureDirection = directionOf(boundaries, SECTOR_DIRECTIONS, offset)
 
     fun sectorWidth(index: Int): Float = sectorWidth(boundaries, index)
 
     companion object {
         val SECTOR_DIRECTIONS = listOf(
-            SubGestureDirection.UpRight,
-            SubGestureDirection.Up,
-            SubGestureDirection.UpLeft,
-            SubGestureDirection.Left,
-            SubGestureDirection.DownLeft,
-            SubGestureDirection.Down,
-            SubGestureDirection.DownRight,
-            SubGestureDirection.Right,
+            GestureDirection.UpRight,
+            GestureDirection.Up,
+            GestureDirection.UpLeft,
+            GestureDirection.Left,
+            GestureDirection.DownLeft,
+            GestureDirection.Down,
+            GestureDirection.DownRight,
+            GestureDirection.Right,
         )
     }
 }

@@ -1,5 +1,6 @@
 package hunoia.luno.gesture
 
+import android.os.SystemClock
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -8,6 +9,7 @@ import androidx.compose.ui.geometry.Offset
 import hunoia.luno.action.api.ActionFacade
 import hunoia.luno.action.payload.SubGestureActionData
 import hunoia.luno.config.model.Action
+import hunoia.luno.config.model.GestureDirection
 import hunoia.luno.config.model.SubGesture
 import hunoia.luno.config.model.SubGestureSettings
 import hunoia.luno.core.JsonSerializer
@@ -17,6 +19,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private const val MAX_SUB_GESTURE_DEPTH = 3
+
+data class SubGestureResolvedActions(
+    val subGesture: SubGesture,
+    val direction: GestureDirection,
+    val actions: List<Action>,
+    val isLongSlide: Boolean,
+)
 
 class SubGestureState(
     private val scope: CoroutineScope,
@@ -32,6 +41,8 @@ class SubGestureState(
     var lastResolvedActionSubGesture by mutableStateOf<SubGesture?>(null)
         private set
     private var timeoutJob by mutableStateOf<Job?>(null)
+    private var longSlideFirstTriggerMs = 0L
+    private var slideVibrationFlags = false
 
     val isActive: Boolean get() = activeSubGesture != null
 
@@ -45,6 +56,8 @@ class SubGestureState(
         if (subGestureDepth >= MAX_SUB_GESTURE_DEPTH) return false
         activeSubGesture = target
         subGestureAccum = Offset.Zero
+        longSlideFirstTriggerMs = 0L
+        slideVibrationFlags = false
         subGestureDepth += 1
         scheduleTimeout()
         onModeChanged(true)
@@ -54,29 +67,51 @@ class SubGestureState(
     fun onDragStart(): Boolean {
         if (!isActive) return false
         subGestureAccum = Offset.Zero
+        longSlideFirstTriggerMs = 0L
+        slideVibrationFlags = false
         restartTimeout()
         return true
     }
 
-    fun onDrag(dragAmount: Offset): Action? {
+    fun onDrag(dragAmount: Offset): SubGestureResolvedActions? {
         if (!isActive) return null
         subGestureAccum += dragAmount
         val sg = activeSubGesture!!
-        if (kotlin.math.hypot(subGestureAccum.x, subGestureAccum.y) >= sg.triggerDistance) {
-            val direction = sg.angle.directionOf(subGestureAccum)
-            val action = sg.actionFor(direction)
-            lastResolvedActionSubGesture = sg
-            activeSubGesture = null
-            subGestureAccum = Offset.Zero
-            sg.tryVibrate()
-            return action
+        val distance = kotlin.math.hypot(subGestureAccum.x, subGestureAccum.y)
+        if (distance >= sg.longSlideTriggerDistance) {
+            if (longSlideFirstTriggerMs == 0L) {
+                longSlideFirstTriggerMs = SystemClock.uptimeMillis()
+            } else if (sg.longSlideTriggerImmediately && SystemClock.uptimeMillis() - longSlideFirstTriggerMs >= sg.longSlideTriggerDelayMs) {
+                val direction = sg.angle.directionOf(subGestureAccum)
+                return resolve(sg, direction, isLongSlide = true)
+            }
+        } else {
+            longSlideFirstTriggerMs = 0L
+        }
+        if (sg.vibrateImmediately && !slideVibrationFlags && distance >= sg.triggerDistance) {
+            slideVibrationFlags = true
+            sg.tryVibrateForSlide()
         }
         return null
     }
 
-    fun onDragEnd() {
-        if (!isActive) return
-        subGestureAccum = Offset.Zero
+    fun onDragEnd(): SubGestureResolvedActions? {
+        if (!isActive) return null
+        val sg = activeSubGesture!!
+        val distance = kotlin.math.hypot(subGestureAccum.x, subGestureAccum.y)
+        val direction = sg.angle.directionOf(subGestureAccum)
+        val canLongSlide = !sg.longSlideTriggerImmediately &&
+            distance >= sg.longSlideTriggerDistance &&
+            longSlideFirstTriggerMs != 0L &&
+            SystemClock.uptimeMillis() - longSlideFirstTriggerMs >= sg.longSlideTriggerDelayMs
+        return when {
+            canLongSlide -> resolve(sg, direction, isLongSlide = true)
+            distance >= sg.triggerDistance -> resolve(sg, direction, isLongSlide = false)
+            else -> {
+                subGestureAccum = Offset.Zero
+                null
+            }
+        }
     }
 
     fun onDragCancel() {
@@ -88,6 +123,8 @@ class SubGestureState(
         activeSubGesture = null
         lastResolvedActionSubGesture = null
         subGestureAccum = Offset.Zero
+        longSlideFirstTriggerMs = 0L
+        slideVibrationFlags = false
         subGestureDepth = 0
         timeoutJob?.cancel()
         timeoutJob = null
@@ -105,5 +142,28 @@ class SubGestureState(
 
     private fun restartTimeout() {
         scheduleTimeout()
+    }
+
+    private fun resolve(
+        subGesture: SubGesture,
+        direction: GestureDirection,
+        isLongSlide: Boolean,
+    ): SubGestureResolvedActions {
+        val actions = if (isLongSlide) {
+            subGesture.longSlideActionsFor(direction)
+        } else {
+            subGesture.slideActionsFor(direction)
+        }
+        lastResolvedActionSubGesture = subGesture
+        activeSubGesture = null
+        subGestureAccum = Offset.Zero
+        longSlideFirstTriggerMs = 0L
+        if (isLongSlide) {
+            subGesture.tryVibrateForLongSlide()
+        } else if (!slideVibrationFlags) {
+            subGesture.tryVibrateForSlide()
+        }
+        slideVibrationFlags = false
+        return SubGestureResolvedActions(subGesture, direction, actions, isLongSlide)
     }
 }
