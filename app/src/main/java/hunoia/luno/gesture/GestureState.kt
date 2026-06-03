@@ -33,6 +33,21 @@ class GestureState(
     private val buttons: List<GestureButton>,
     advancedSettings: AdvancedSettings = AdvancedSettings(),
     gestureSettings: GestureSettings = GestureSettings(),
+    private val touchTargetProvider: (List<GestureButton>, Offset, Int) -> GestureTouchTarget? = { buttons, offset, imePadding ->
+        buttons.findTouchTarget(offset, imePadding)
+    },
+    private val thresholdsProvider: (GestureButton) -> GestureThresholds = { button ->
+        GestureThresholds(
+            touchSlop = ViewConfiguration.get(AppContext.get()).scaledTouchSlop.toFloat(),
+            longPressDelayMs = button.longPressTriggerDelayMs,
+            doubleTapDelayMs = button.doubleTapTriggerDelayMs,
+            slideHoldDelayMs = button.slideHoldTriggerDelayMs,
+            longSlideHoldDelayMs = button.longSlideHoldTriggerDelayMs,
+            slideTriggerDistance = button.slideTriggerDistance.toFloat(),
+            longSlideTriggerDistance = button.longSlideTriggerDistance.toFloat(),
+        )
+    },
+    private val timeProvider: () -> Long = { SystemClock.uptimeMillis() },
 ) {
 
     var isCanceled: Boolean by mutableStateOf(false)
@@ -72,38 +87,52 @@ class GestureState(
     private var slideVibrationFlags = false
     private var longPressCheckJob: Job? = null
     private var pendingDoubleTapJob: Job? = null
+    private var pendingTapResult: GestureResolvedActions? = null
 
     private val recognizer = GestureRecognizer()
 
-    private val viewConfiguration = ViewConfiguration.get(AppContext.get())
-
     fun onDragStart(offset: Offset, imePadding: Int) {
         isCanceled = false
+        val touchTarget = touchTargetProvider(buttons, offset, imePadding)
+        val nextButton = touchTarget?.sourceButton
+        val previousPendingTap = pendingTapResult
+        if (previousPendingTap != null) {
+            pendingDoubleTapJob?.cancel()
+            pendingDoubleTapJob = null
+            if (nextButton?.id != previousPendingTap.button.id) {
+                settlePendingTap(triggerFallback = true)
+            }
+        }
+
         origin = offset
         finger = offset
-        val touchTarget = buttons.findTouchTarget(offset, imePadding)
-        button = touchTarget?.sourceButton
+        button = nextButton
         effectiveButton = touchTarget?.effectiveButton
         isMirrorTouchTarget = touchTarget?.isMirror == true
 
         val b = button ?: run {
             effectiveButton = null
             animState = AnimState()
+            recognizer.clearPendingDoubleTap()
             return
         }
 
         slideVibrationFlags = false
-        pendingDoubleTapJob?.cancel()
-        pendingDoubleTapJob = null
+        if (previousPendingTap?.button?.id == b.id) {
+            pendingTapResult = null
+        } else {
+            pendingDoubleTapJob?.cancel()
+            pendingDoubleTapJob = null
+        }
 
         val config = buildRecognizerConfig(b)
-        recognizer.onDown(timeMs(), offset, config)
+        recognizer.onDown(timeProvider(), offset, config)
 
         if (config.hasLongPressActions) {
             longPressCheckJob?.cancel()
             longPressCheckJob = coroutineScope.launch {
                 delay(config.thresholds.longPressDelayMs)
-                val decision = recognizer.checkTime(timeMs(), config)
+                val decision = recognizer.checkTime(timeProvider(), config)
                 if (decision is GestureDecision.Trigger &&
                     decision.triggerType == GestureTriggerType.LongPress
                 ) {
@@ -130,9 +159,8 @@ class GestureState(
 
         val b = button ?: return null
 
-        val timeMs = timeMs()
         val config = buildRecognizerConfig(b)
-        val decision = recognizer.onMove(timeMs, dragAmount, config)
+        val decision = recognizer.onMove(timeProvider(), dragAmount, config)
 
         triggerDirection = recognizer.triggerDirection
         actionDirection = recognizer.actionDirection
@@ -175,7 +203,7 @@ class GestureState(
         val b = button ?: return null
 
         val config = buildRecognizerConfig(b)
-        val decision = recognizer.onUp(timeMs(), config)
+        val decision = recognizer.onUp(timeProvider(), config)
 
         when (decision) {
             is GestureDecision.Noop -> {
@@ -204,13 +232,11 @@ class GestureState(
                     decision.tapDecision.triggerType,
                     actionsFor(b, decision.tapDecision),
                 )
+                pendingTapResult = tapResult
                 pendingDoubleTapJob = coroutineScope.launch {
                     delay(config.thresholds.doubleTapDelayMs)
                     recognizer.clearPendingDoubleTap()
-                    if (tapResult.actions.hasMeaningfulActions()) {
-                        b.tryVibrateForTap()
-                        onResolved(tapResult)
-                    }
+                    if (pendingTapResult == tapResult) settlePendingTap(triggerFallback = true)
                 }
                 resetSession()
                 return null
@@ -230,6 +256,9 @@ class GestureState(
 
     fun onDragCancel() {
         recognizer.onCancel()
+        pendingTapResult = null
+        pendingDoubleTapJob?.cancel()
+        pendingDoubleTapJob = null
         reset()
     }
 
@@ -237,6 +266,7 @@ class GestureState(
         recognizer.clearPendingDoubleTap()
         pendingDoubleTapJob?.cancel()
         pendingDoubleTapJob = null
+        pendingTapResult = null
     }
 
     private fun reset() {
@@ -244,8 +274,21 @@ class GestureState(
         longPressCheckJob = null
         pendingDoubleTapJob?.cancel()
         pendingDoubleTapJob = null
+        pendingTapResult = null
         resetSession()
         isCanceled = false
+    }
+
+    private fun settlePendingTap(triggerFallback: Boolean) {
+        val result = pendingTapResult
+        pendingTapResult = null
+        pendingDoubleTapJob?.cancel()
+        pendingDoubleTapJob = null
+        recognizer.clearPendingDoubleTap()
+        if (triggerFallback && result != null && result.actions.hasMeaningfulActions()) {
+            result.button.tryVibrateForTap()
+            onResolved(result)
+        }
     }
 
     private fun resetSession() {
@@ -277,15 +320,7 @@ class GestureState(
     }
 
     private fun buildRecognizerConfig(button: GestureButton): GestureConfig {
-        val thresholds = GestureThresholds(
-            touchSlop = viewConfiguration.scaledTouchSlop.toFloat(),
-            longPressDelayMs = button.longPressTriggerDelayMs,
-            doubleTapDelayMs = button.doubleTapTriggerDelayMs,
-            slideHoldDelayMs = button.slideHoldTriggerDelayMs,
-            longSlideHoldDelayMs = button.longSlideHoldTriggerDelayMs,
-            slideTriggerDistance = button.slideTriggerDistance.toFloat(),
-            longSlideTriggerDistance = button.longSlideTriggerDistance.toFloat(),
-        )
+        val thresholds = thresholdsProvider(button)
         return GestureConfig(
             buttonId = button.id,
             angle = button.angle,
@@ -330,8 +365,4 @@ class GestureState(
     }
 
     private fun List<Action>.hasMeaningfulActions(): Boolean = any { it != Action.NONE }
-
-    private companion object {
-        private fun timeMs(): Long = SystemClock.uptimeMillis()
-    }
 }
