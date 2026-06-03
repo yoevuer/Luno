@@ -1,33 +1,32 @@
 package hunoia.luno.config.backup
-import hunoia.luno.config.ConfigProvider
 
 import android.content.Context
-import android.net.Uri
-import hunoia.luno.core.Paths
-import hunoia.luno.core.JsonSerializer
-import hunoia.luno.config.model.Backup
-import android.util.Base64
-import java.io.FileOutputStream
-import java.io.FileInputStream
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
-import java.util.zip.ZipInputStream
 import android.content.pm.PackageManager
-import android.os.Build
+import android.net.Uri
+import hunoia.luno.config.ConfigProvider
+import hunoia.luno.config.model.Backup
+import hunoia.luno.core.JsonSerializer
+import hunoia.luno.core.Paths
 import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.util.Base64
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
 
 object BackupOperator {
 
     private const val ZIP_BACKUP = "backup"
     private const val ZIP_IMAGES = "images"
 
-    private val backupDir = "${Paths.AppCache}/backup"
-    private val restoreDir = "${Paths.AppCache}/restore"
+    private val backupDir get() = "${Paths.AppCache}/backup"
+    private val restoreDir get() = "${Paths.AppCache}/restore"
 
-    private val backupItemFilePath = "$backupDir/$ZIP_BACKUP"
-    private val zipImagePath = "$backupDir/$ZIP_IMAGES"
-    private val zipFilePath = "$backupDir/zip"
-    private val restoreFilePath = "$restoreDir/restore"
+    private val backupItemFilePath get() = "$backupDir/$ZIP_BACKUP"
+    private val zipImagePath get() = "$backupDir/$ZIP_IMAGES"
+    private val zipFilePath get() = "$backupDir/zip"
+    private val restoreFilePath get() = "$restoreDir/restore"
 
     suspend fun backup(context: Context, saveTo: Uri) {
         try {
@@ -77,6 +76,34 @@ object BackupOperator {
         }
     }
 
+    fun precheckRestore(context: Context, restoreFrom: Uri): RestorePrecheckResult {
+        val bytes = try {
+            context.contentResolver.openInputStream(restoreFrom)?.use { it.readBytes() }
+        } catch (_: Exception) {
+            null
+        } ?: return RestorePrecheckResult.Failed(RestorePrecheckFailure.CannotReadFile)
+        return precheckRestoreBytes(bytes)
+    }
+
+    fun precheckRestoreBytes(bytes: ByteArray): RestorePrecheckResult {
+        if (bytes.isEmpty()) {
+            return RestorePrecheckResult.Failed(RestorePrecheckFailure.CannotReadFile)
+        }
+        val entries = runCatching { readZipEntries(bytes) }
+            .getOrElse { return RestorePrecheckResult.Failed(RestorePrecheckFailure.InvalidFormat) }
+        val backupBytes = entries[ZIP_BACKUP]
+            ?: return RestorePrecheckResult.Failed(RestorePrecheckFailure.InvalidFormat)
+        if (!entries.containsKey(ZIP_IMAGES)) {
+            return RestorePrecheckResult.Failed(RestorePrecheckFailure.InvalidFormat)
+        }
+        val backup = decodeBackup(backupBytes)
+            ?: return RestorePrecheckResult.Failed(RestorePrecheckFailure.VerificationFailed)
+        if (backup.isEmpty()) {
+            return RestorePrecheckResult.Failed(RestorePrecheckFailure.EmptyBackup)
+        }
+        return RestorePrecheckResult.Passed
+    }
+
     suspend fun restore(context: Context, restoreFrom: Uri) {
         try {
             context.contentResolver.openInputStream(restoreFrom)!!.use { inputStream ->
@@ -122,18 +149,12 @@ object BackupOperator {
     private suspend fun getBackupItemBytes(): ByteArray {
         val backup = ConfigProvider.snapshotAll()
         val json = JsonSerializer.encodeToString(backup)
-        return Base64.encode(json.toByteArray(), Base64.NO_WRAP)
+        return Base64.getEncoder().encode(json.toByteArray())
     }
 
     private suspend fun restoreBackupFromBytes(context: Context, bytes: ByteArray) {
-        val decoded = Base64.decode(bytes, Base64.NO_WRAP)
-        val backup = JsonSerializer.decodeFromString<Backup>(String(decoded))
-        if (backup.initialSettings == null && backup.advancedSettings == null &&
-            backup.gestureSettings == null && backup.actionSettings == null &&
-            backup.gestureButtons == null &&
-            backup.quickAppLauncherSettings == null && backup.frozenAppSettings == null &&
-            backup.subGestureSettings == null
-        ) {
+        val backup = decodeBackup(bytes) ?: throw IllegalStateException("restore failed: backup decode failed")
+        if (backup.isEmpty()) {
             throw IllegalStateException("restore failed: backup contains no settings")
         }
         val installedPackages = queryInstalledPackageNames(context)
@@ -153,6 +174,21 @@ object BackupOperator {
         }
     }
 
+    private fun decodeBackup(bytes: ByteArray): Backup? {
+        return runCatching {
+            val decoded = Base64.getDecoder().decode(bytes)
+            JsonSerializer.decodeFromString<Backup>(String(decoded))
+        }.getOrNull()
+    }
+
+    private fun Backup.isEmpty(): Boolean {
+        return initialSettings == null && advancedSettings == null &&
+            gestureSettings == null && actionSettings == null &&
+            gestureButtons == null &&
+            quickAppLauncherSettings == null && frozenAppSettings == null &&
+            subGestureSettings == null && actionLibrarySettings == null
+    }
+
     private fun sanitizeFrozenAppSettings(
         settings: hunoia.luno.config.model.FrozenAppSettings?,
         installedPackages: Set<String>
@@ -170,6 +206,16 @@ object BackupOperator {
             apps.map { it.packageName }.filter { it.isNotBlank() }.toSet()
         } catch (_: Exception) {
             emptySet()
+        }
+    }
+
+    private fun readZipEntries(bytes: ByteArray): Map<String, ByteArray> {
+        val tempDir = kotlin.io.path.createTempDirectory("luno-restore-precheck").toFile()
+        return try {
+            val zipFile = File(tempDir, "restore.zip").also { it.writeBytes(bytes) }
+            unzipFile(zipFile, tempDir).filter { it.isFile }.associate { it.name to it.readBytes() }
+        } finally {
+            tempDir.deleteRecursively()
         }
     }
 

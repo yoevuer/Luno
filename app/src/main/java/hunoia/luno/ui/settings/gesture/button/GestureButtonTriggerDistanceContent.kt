@@ -1,9 +1,21 @@
 package hunoia.luno.ui.settings.gesture.button
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import hunoia.luno.R
+import hunoia.luno.bridge.DensityProvider
 import hunoia.luno.config.defaults.SettingsUiDefaults.MaxLongPressTriggerDelayMs
 import hunoia.luno.config.defaults.SettingsUiDefaults.MaxDoubleTapTriggerDelayMs
 import hunoia.luno.config.defaults.SettingsUiDefaults.MaxHoldTriggerDelayMs
@@ -17,6 +29,9 @@ import hunoia.luno.config.defaults.SettingsUiDefaults.MinSlideTriggerDistance
 import hunoia.luno.config.model.GestureButton
 import hunoia.luno.ui.component.MyColumn
 import hunoia.luno.ui.component.input.MyTextSlider
+import hunoia.luno.ui.theme.ContentPaddingHorizontal
+import hunoia.luno.ui.theme.Spacing8
+import kotlin.math.roundToInt
 
 @Composable
 fun GestureButtonTriggerDistanceContent(
@@ -60,13 +75,17 @@ fun GestureSlideTriggerDistanceContent(
     onLongSlideHoldTriggerDelayMsChange: (Float) -> Unit,
     scrollState: androidx.compose.foundation.ScrollState? = null,
 ) {
+    val slideTriggerDistanceDp = slideTriggerDistance.pxToDp()
+    val slideTriggerDistanceRangeDp = slideTriggerDistanceRange.toDpRange()
+    val longSlideTriggerDistanceDp = longSlideTriggerDistance.pxToDp()
+    val longSlideTriggerDistanceRangeDp = longSlideTriggerDistanceRange.toDpRange()
+
     val content: @Composable () -> Unit = {
-        MyTextSlider(
-            value = slideTriggerDistance.toFloat(),
-            onValueChange = onSlideTriggerDistanceChange,
+        DistanceTextSlider(
+            valueDp = slideTriggerDistanceDp,
+            onValueDpChange = { onSlideTriggerDistanceChange(it.dpToPx()) },
             text = stringResource(R.string.trigger_slide_distance),
-            valueDisplay = "${slideTriggerDistance}px",
-            valueRange = slideTriggerDistanceRange,
+            valueRangeDp = slideTriggerDistanceRangeDp,
         )
         if (longPressTriggerDelayMs != null && onLongPressTriggerDelayMsChange != null) {
             MyTextSlider(
@@ -86,12 +105,11 @@ fun GestureSlideTriggerDistanceContent(
                 valueRange = MinDoubleTapTriggerDelayMs.toFloat()..MaxDoubleTapTriggerDelayMs.toFloat(),
             )
         }
-        MyTextSlider(
-            value = longSlideTriggerDistance.toFloat(),
-            onValueChange = onLongSlideTriggerDistanceChange,
+        DistanceTextSlider(
+            valueDp = longSlideTriggerDistanceDp,
+            onValueDpChange = { onLongSlideTriggerDistanceChange(it.dpToPx()) },
             text = stringResource(R.string.trigger_long_slide_distance),
-            valueDisplay = "${longSlideTriggerDistance}px",
-            valueRange = longSlideTriggerDistanceRange,
+            valueRangeDp = longSlideTriggerDistanceRangeDp,
         )
         MyTextSlider(
             value = slideHoldTriggerDelayMs.toFloat(),
@@ -114,3 +132,55 @@ fun GestureSlideTriggerDistanceContent(
         content()
     }
 }
+
+@Composable
+private fun DistanceTextSlider(
+    valueDp: Float,
+    onValueDpChange: (Float) -> Unit,
+    text: String,
+    valueRangeDp: ClosedFloatingPointRange<Float>,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing8)) {
+        MyTextSlider(
+            value = valueDp,
+            onValueChange = onValueDpChange,
+            text = text,
+            valueDisplay = "${valueDp.roundToInt()}dp",
+            valueRange = valueRangeDp,
+        )
+        DistancePreviewBar(valueDp = valueDp)
+    }
+}
+
+@Composable
+private fun DistancePreviewBar(
+    valueDp: Float,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    Canvas(
+        modifier = Modifier
+            .padding(horizontal = ContentPaddingHorizontal)
+            .fillMaxWidth()
+            .height(Spacing8)
+    ) {
+        val centerY = size.height / 2f
+        val strokeWidth = 4.dp.toPx()
+        val previewWidth = valueDp.dp.toPx().coerceIn(0f, size.width)
+        drawLine(
+            color = colorScheme.tertiary,
+            start = Offset(0f, centerY),
+            end = Offset(previewWidth, centerY),
+            strokeWidth = strokeWidth,
+            cap = StrokeCap.Round,
+        )
+    }
+}
+
+private fun Int.pxToDp(): Float = toFloat().pxToDp()
+
+private fun Float.pxToDp(): Float = this / DensityProvider.density
+
+private fun Float.dpToPx(): Float = this * DensityProvider.density
+
+private fun ClosedFloatingPointRange<Float>.toDpRange(): ClosedFloatingPointRange<Float> =
+    start.pxToDp()..endInclusive.pxToDp()

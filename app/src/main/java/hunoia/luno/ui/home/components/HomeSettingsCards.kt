@@ -21,13 +21,12 @@ import androidx.compose.material.icons.filled.AcUnit
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -37,7 +36,7 @@ import androidx.compose.ui.res.stringResource
 import kotlin.math.roundToInt
 
 @Composable
-fun HomeExcludeCard(uiState: UiState, onClick: () -> Unit) {
+fun HomeExcludeCard(onClick: () -> Unit) {
     ExpressiveCard(
         title = stringResource(id = R.string.exclude_app_short),
         subtitle = stringResource(id = R.string.exclude_app_hint),
@@ -135,7 +134,7 @@ fun HomeToolsCard(
     onCardAreaPosition: (Int) -> Unit,
 ) {
     ExpressiveCard(
-        title = stringResource(id = R.string.tools),
+        title = stringResource(id = R.string.backup_restore),
         subtitle = stringResource(id = R.string.backup_restore_default_hint),
         icon = Icons.Default.Build,
         onClick = {},
@@ -147,9 +146,10 @@ fun HomeToolsCard(
             FilledTonalButton(onClick = onRestoreClick, modifier = Modifier.weight(1f)) {
                 Text(stringResource(id = R.string.restore))
             }
-            FilledTonalButton(onClick = onResetToggle, modifier = Modifier.weight(1f)) {
-                Text(stringResource(id = R.string.default_action))
-            }
+        }
+        Spacer(Modifier.height(Spacing8))
+        OutlinedButton(onClick = onResetToggle, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(id = R.string.default_action))
         }
         AnimatedVisibility(
             visible = showResetConfirm,
@@ -194,22 +194,4 @@ fun HomeToolsCard(
             }
         }
     }
-}
-
-@Composable
-fun HomeKeepAliveCard(
-    enabled: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-) {
-    HomeCard(
-        title = stringResource(id = R.string.keep_alive),
-        subtitle = stringResource(id = R.string.keep_alive_hint),
-        leading = {
-            HomeCardIcon(Icons.Default.Security)
-        },
-        onClick = { onCheckedChange(!enabled) },
-        trailing = {
-            Switch(checked = enabled, onCheckedChange = onCheckedChange)
-        },
-    )
 }

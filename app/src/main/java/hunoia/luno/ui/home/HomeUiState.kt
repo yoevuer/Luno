@@ -3,6 +3,7 @@ package hunoia.luno.ui.home
 import hunoia.luno.config.model.GestureButton
 import hunoia.luno.config.model.GestureSettings
 import hunoia.luno.config.model.SubGesture
+import hunoia.luno.shizuku.ShizukuStatus
 
 sealed interface RenameTarget {
     val name: String
@@ -31,5 +32,22 @@ data class UiState(
     val frozenAppCount: Int = 0,
     val selectedFrozenAppCount: Int = 0,
     val isKeepAliveEnabled: Boolean = false,
+    val shizukuStatus: ShizukuStatus = ShizukuStatus(
+        installed = false,
+        binderAlive = false,
+        permissionGranted = false,
+        uid = null,
+    ),
+    val runtimeStatus: HomeRuntimeStatus = HomeRuntimeStatusMapper.map(
+        isAccessibilityEnabled = false,
+        isGestureEnabled = false,
+        isKeepAliveEnabled = false,
+        shizukuStatus = ShizukuStatus(
+            installed = false,
+            binderAlive = false,
+            permissionGranted = false,
+            uid = null,
+        ),
+    ),
     val renameDialogTarget: RenameTarget? = null,
 )

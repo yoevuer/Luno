@@ -3,13 +3,13 @@ package hunoia.luno.ui.home
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.viewModelScope
-import com.aaron.compose.base.BaseComposeVM
 import hunoia.luno.bridge.feedback.showToast
 import hunoia.luno.config.ConfigProvider
-import hunoia.luno.config.model.GestureButton
-import hunoia.luno.config.model.resolveDisplayName
-import hunoia.luno.config.model.SubGesture
 import hunoia.luno.config.SubGestureCleaner
+import hunoia.luno.config.backup.RestorePrecheckResult
+import hunoia.luno.config.model.GestureButton
+import hunoia.luno.config.model.SubGesture
+import hunoia.luno.config.model.resolveDisplayName
 import hunoia.luno.core.AppContext
 import hunoia.luno.R
 import hunoia.luno.shizuku.ShizukuManager
@@ -17,7 +17,7 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-
+import kotlinx.coroutines.withContext
 
 class HomeVM : HomeVMBase() {
 
@@ -26,6 +26,7 @@ class HomeVM : HomeVMBase() {
     init {
         loadData()
         loadFrozenCount()
+        observeShizukuStatus()
         viewModelScope.launch {
             ShizukuManager.autoRequestPermissionIfNeeded()
             ShizukuManager.ensureWriteSecureSettings()
@@ -43,6 +44,20 @@ class HomeVM : HomeVMBase() {
         }
     }
 
+    fun precheckRestore(context: Context, restoreFrom: Uri, onPassed: () -> Unit) {
+        viewModelScope.launchWithLoading(
+            Dispatchers.IO + CoroutineExceptionHandler { _, _ ->
+                toast(R.string.restore_precheck_invalid_format)
+            },
+            cancelable = false
+        ) {
+            when (val result = BackupService.precheckRestore(context, restoreFrom)) {
+                RestorePrecheckResult.Passed -> withContext(Dispatchers.Main) { onPassed() }
+                is RestorePrecheckResult.Failed -> toast(result.reason.stringRes)
+            }
+        }
+    }
+
     fun restore(context: Context, restoreFrom: Uri) {
         viewModelScope.launchWithLoading(
             Dispatchers.IO + CoroutineExceptionHandler { _, _ ->
@@ -51,6 +66,9 @@ class HomeVM : HomeVMBase() {
             cancelable = false
         ) {
             BackupService.restore(context, restoreFrom) { toast(it) }
+            updatePermissionState()
+            refreshShizukuStatus()
+            loadFrozenCount()
         }
     }
 
@@ -74,7 +92,7 @@ class HomeVM : HomeVMBase() {
             if (index < 0) it else {
                 it.copy(subGestures = list.mapIndexed { i, g ->
                     if (i == index) g.copy(enabled = enabled) else g
-                })
+                }).withRuntimeStatus()
             }
         }
         saveSettings()
@@ -85,7 +103,7 @@ class HomeVM : HomeVMBase() {
             it.copy(
                 isSubGestureListExpanded = false,
                 isGestureButtonListExpanded = false
-            )
+            ).withRuntimeStatus()
         }
     }
 
@@ -94,7 +112,7 @@ class HomeVM : HomeVMBase() {
             it.copy(
                 isSubGestureListExpanded = expanded,
                 isGestureButtonListExpanded = it.isGestureButtonListExpanded && !expanded
-            )
+            ).withRuntimeStatus()
         }
         if (expanded && scrollOffset != Int.MAX_VALUE) {
             sendUiEvent(UiEvent.ScrollToEvent(scrollOffset))
@@ -124,7 +142,7 @@ class HomeVM : HomeVMBase() {
             it.copy(
                 isGestureButtonListExpanded = expanded,
                 isSubGestureListExpanded = it.isSubGestureListExpanded && !expanded
-            )
+            ).withRuntimeStatus()
         }
         if (expanded && scrollOffset != Int.MAX_VALUE) {
             sendUiEvent(UiEvent.ScrollToEvent(scrollOffset))
@@ -156,7 +174,7 @@ class HomeVM : HomeVMBase() {
 
     fun onAppGestureEnabledChange(enabled: Boolean) {
         updateUiState {
-            it.copy(isGestureEnabled = enabled)
+            it.copy(isGestureEnabled = enabled).withRuntimeStatus()
         }
         saveSettings()
     }
@@ -168,7 +186,7 @@ class HomeVM : HomeVMBase() {
             if (index < 0) it else {
                 it.copy(gestureButtons = buttons.mapIndexed { i, b ->
                     if (i == index) b.copy(enabled = enabled) else b
-                })
+                }).withRuntimeStatus()
             }
         }
         saveSettings()
@@ -186,11 +204,11 @@ class HomeVM : HomeVMBase() {
     }
 
     fun showRenameDialog(target: RenameTarget) {
-        updateUiState { it.copy(renameDialogTarget = target) }
+        updateUiState { it.copy(renameDialogTarget = target).withRuntimeStatus() }
     }
 
     fun hideRenameDialog() {
-        updateUiState { it.copy(renameDialogTarget = null) }
+        updateUiState { it.copy(renameDialogTarget = null).withRuntimeStatus() }
     }
 
     fun doRename(target: RenameTarget, newName: String) {

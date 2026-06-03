@@ -15,6 +15,8 @@ import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.res.stringResource
 
 @Composable
@@ -31,8 +33,15 @@ fun HomeGestureSections(
     onMarkColorClick: (Any) -> Unit,
     onGestureButtonRename: (GestureButton) -> Unit = {},
     onSubGestureRename: (SubGesture) -> Unit = {},
+    onSectionPositioned: (Int) -> Unit = {},
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .onGloballyPositioned { coordinates ->
+                onSectionPositioned(coordinates.positionInWindow().y.toInt())
+            },
+    ) {
         Column {
             GestureEntryCard(
                 title = stringResource(id = R.string.gesture_button),

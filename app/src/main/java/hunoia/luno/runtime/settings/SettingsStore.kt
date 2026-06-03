@@ -5,8 +5,6 @@ import hunoia.luno.config.model.ActionSettings
 import hunoia.luno.config.model.AdvancedSettings
 import hunoia.luno.config.model.GestureButton
 import hunoia.luno.config.model.GestureSettings
-import hunoia.luno.config.model.InitialSettings
-import hunoia.luno.config.model.SubGestureSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,21 +26,32 @@ class SettingsStore(
         if (started) return
         started = true
         scope.launch(Dispatchers.Main.immediate) {
-            combine(
+            val runtimeSettings = combine(
                 ConfigProvider.gestureButtons,
                 ConfigProvider.advancedSettings,
                 ConfigProvider.gestureSettings,
                 ConfigProvider.actionSettings,
+            ) { gestureButtons, advancedSettings, gestureSettings, actionSettings ->
+                RuntimeSettingsCore(
+                    gestureButtons = gestureButtons,
+                    advancedSettings = advancedSettings,
+                    gestureSettings = gestureSettings,
+                    actionSettings = actionSettings,
+                )
+            }
+
+            combine(
+                runtimeSettings,
                 ConfigProvider.initialSettings,
                 ConfigProvider.subGestureSettings,
-            ) { values ->
+            ) { runtime, initialSettings, subGestureSettings ->
                 SettingsState(
-                    gestureButtons = values[0] as List<GestureButton>,
-                    advancedSettings = values[1] as AdvancedSettings,
-                    gestureSettings = values[2] as GestureSettings,
-                    actionSettings = values[3] as ActionSettings,
-                    initialSettings = values[4] as InitialSettings,
-                    subGestureSettings = values[5] as SubGestureSettings,
+                    gestureButtons = runtime.gestureButtons,
+                    advancedSettings = runtime.advancedSettings,
+                    gestureSettings = runtime.gestureSettings,
+                    actionSettings = runtime.actionSettings,
+                    initialSettings = initialSettings,
+                    subGestureSettings = subGestureSettings,
                 )
             }.collectLatest { _state.value = it }
         }
@@ -50,3 +59,10 @@ class SettingsStore(
 
     fun snapshot(): SettingsState = _state.value
 }
+
+private data class RuntimeSettingsCore(
+    val gestureButtons: List<GestureButton>,
+    val advancedSettings: AdvancedSettings,
+    val gestureSettings: GestureSettings,
+    val actionSettings: ActionSettings,
+)

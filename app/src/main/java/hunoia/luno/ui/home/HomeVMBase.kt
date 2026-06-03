@@ -1,7 +1,5 @@
 package hunoia.luno.ui.home
 
-import android.content.Context
-import android.content.Intent
 import androidx.lifecycle.viewModelScope
 import com.aaron.compose.base.BaseComposeVM
 import hunoia.luno.R
@@ -9,24 +7,24 @@ import hunoia.luno.core.AppContext
 import hunoia.luno.config.ConfigProvider
 import hunoia.luno.config.model.AdvancedSettings
 import hunoia.luno.config.model.FrozenAppSettings
+import hunoia.luno.config.model.GestureButton
 import hunoia.luno.config.model.GestureSettings
 import hunoia.luno.config.model.InitialSettings
+import hunoia.luno.config.model.SubGestureSettings
 import hunoia.luno.freeze.FreezeUseCase
-import hunoia.luno.bridge.isAccessibilitySettingsOn
 import hunoia.luno.bridge.feedback.showToast
-import hunoia.luno.bridge.hasWriteSecureSettingsPermission
-import hunoia.luno.service.DaemonService
+import hunoia.luno.keepalive.KeepAliveUseCase
+import hunoia.luno.permission.PermissionStateUseCase
+import hunoia.luno.shizuku.ShizukuManager
 import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 abstract class HomeVMBase : BaseComposeVM<UiState, UiEvent>() {
 
     fun onPointerChange(value: GestureSettings.Pointer) {
-        updateUiState { it.copy(pointer = value) }
+        updateUiState { it.copy(pointer = value).withRuntimeStatus() }
     }
 
     fun savePointerSettings() {
@@ -51,7 +49,7 @@ abstract class HomeVMBase : BaseComposeVM<UiState, UiEvent>() {
             }
         ) {
             val result = FreezeUseCase.oneKeyFreeze()
-            updateUiState { it.copy(frozenAppCount = result.totalAfter) }
+            updateUiState { it.copy(frozenAppCount = result.totalAfter).withRuntimeStatus() }
             showToast(AppContext.get().getString(R.string.bulk_frozen_count, result.changed))
         }
     }
@@ -63,53 +61,50 @@ abstract class HomeVMBase : BaseComposeVM<UiState, UiEvent>() {
             }
         ) {
             val result = FreezeUseCase.oneKeyUnfreeze()
-            updateUiState { it.copy(frozenAppCount = result.totalAfter) }
+            updateUiState { it.copy(frozenAppCount = result.totalAfter).withRuntimeStatus() }
             showToast(AppContext.get().getString(R.string.bulk_unfrozen_count, result.changed))
         }
     }
 
     fun onKeepAliveChange(enabled: Boolean) {
-        if (enabled) {
-            val context = AppContext.get()
-            if (!context.hasWriteSecureSettingsPermission()) {
-                showToast(R.string.keep_alive_need_permission)
-                return
-            }
-        }
-        updateUiState { it.copy(isKeepAliveEnabled = enabled) }
         viewModelScope.launch {
-            ConfigProvider.updateAdvancedSettings { it.copy(keepAliveEnabled = enabled) }
-            withContext(Dispatchers.IO) {
-                AppContext.get().getSharedPreferences("daemon", Context.MODE_PRIVATE)
-                    .edit()
-                    .putBoolean("keep_alive", enabled)
-                    .apply()
-            }
-            if (enabled) {
-                val intent = Intent(AppContext.get(), DaemonService::class.java)
-                AppContext.get().startForegroundService(intent)
-            } else {
-                val intent = Intent(AppContext.get(), DaemonService::class.java)
-                AppContext.get().stopService(intent)
+            val changed = KeepAliveUseCase.setEnabled(
+                context = AppContext.get(),
+                enabled = enabled,
+                onPermissionRequired = { showToast(it) },
+            )
+            if (changed) {
+                updateUiState { it.copy(isKeepAliveEnabled = enabled).withRuntimeStatus() }
             }
         }
     }
 
     fun updatePermissionState() {
         viewModelScope.launch {
-            val app = AppContext.get()
-            val isGestureEnabled = ConfigProvider.getInitialSettings().gestureEnabled
-            val clazz = Class.forName("hunoia.luno.service.SideGestureService")
-            val isAccessibilityEnabled = app.isAccessibilitySettingsOn(clazz)
-            val hasWriteSecureSettings = app.hasWriteSecureSettingsPermission()
-            val keepAliveSettings = ConfigProvider.getAdvancedSettings().keepAliveEnabled
+            val state = PermissionStateUseCase.loadHomePermissionState(AppContext.get())
             updateUiState {
                 it.copy(
-                    isGestureEnabled = isAccessibilityEnabled && isGestureEnabled,
-                    isAccessibilityEnabled = isAccessibilityEnabled,
-                    isKeepAliveEnabled = keepAliveSettings && hasWriteSecureSettings,
-                )
+                    isGestureEnabled = state.isGestureEnabled,
+                    isAccessibilityEnabled = state.isAccessibilityEnabled,
+                    isKeepAliveEnabled = state.isKeepAliveEnabled,
+                ).withRuntimeStatus()
             }
+        }
+    }
+
+    fun refreshShizukuStatus() {
+        ShizukuManager.updateStatus()
+        updateUiState { it.copy(shizukuStatus = ShizukuManager.currentStatus()).withRuntimeStatus() }
+    }
+
+    fun requestShizukuPermission() {
+        viewModelScope.launch(
+            CoroutineExceptionHandler { _, _ ->
+                refreshShizukuStatus()
+            }
+        ) {
+            ShizukuManager.requestPermission()
+            refreshShizukuStatus()
         }
     }
 
@@ -122,7 +117,15 @@ abstract class HomeVMBase : BaseComposeVM<UiState, UiEvent>() {
     protected fun loadFrozenCount() {
         viewModelScope.launch {
             val count = FreezeUseCase.queryFrozenCount()
-            updateUiState { it.copy(frozenAppCount = count) }
+            updateUiState { it.copy(frozenAppCount = count).withRuntimeStatus() }
+        }
+    }
+
+    protected fun observeShizukuStatus() {
+        viewModelScope.launch {
+            ShizukuManager.statusFlow.collectLatest { status ->
+                updateUiState { it.copy(shizukuStatus = status).withRuntimeStatus() }
+            }
         }
     }
 
@@ -138,7 +141,7 @@ abstract class HomeVMBase : BaseComposeVM<UiState, UiEvent>() {
             }
             launch {
                 ConfigProvider.updateSubGestureSettings {
-                    hunoia.luno.config.model.SubGestureSettings(subGestures = uiState.subGestures)
+                    SubGestureSettings(subGestures = uiState.subGestures)
                 }
             }
         }
@@ -146,33 +149,64 @@ abstract class HomeVMBase : BaseComposeVM<UiState, UiEvent>() {
 
     protected fun loadData() {
         viewModelScope.launch {
-            combine(
+            val gestureData = combine(
                 ConfigProvider.initialSettings,
                 ConfigProvider.gestureButtons,
                 ConfigProvider.subGestureSettings,
+            ) { initial, buttons, subGestureSettings ->
+                HomeGestureData(
+                    initialSettings = initial,
+                    gestureButtons = buttons,
+                    subGestureSettings = subGestureSettings,
+                )
+            }
+            val runtimeData = combine(
                 ConfigProvider.gestureSettings,
                 ConfigProvider.advancedSettings,
                 ConfigProvider.frozenAppSettings,
-            ) { values ->
-                val initial = values[0] as InitialSettings
-                @Suppress("UNCHECKED_CAST")
-                val buttons = values[1] as List<hunoia.luno.config.model.GestureButton>
-                val subGestureSettings = values[2] as hunoia.luno.config.model.SubGestureSettings
-                val gestureSettings = values[3] as GestureSettings
-                val advancedSettings = values[4] as AdvancedSettings
-                val frozenAppSettings = values[5] as FrozenAppSettings
-                uiState.copy(
-                    isGestureEnabled = initial.gestureEnabled,
-                    gestureButtons = buttons.sortedBy { it.id },
-                    subGestures = subGestureSettings.subGestures,
-                    pointer = gestureSettings.pointer,
-                    excludedAppCount = advancedSettings.excludeApps.size,
-                    selectedFrozenAppCount = frozenAppSettings.oneKeyPackageNames.size,
-                    isKeepAliveEnabled = advancedSettings.keepAliveEnabled,
+            ) { gestureSettings, advancedSettings, frozenAppSettings ->
+                HomeRuntimeData(
+                    gestureSettings = gestureSettings,
+                    advancedSettings = advancedSettings,
+                    frozenAppSettings = frozenAppSettings,
                 )
+            }
+            combine(gestureData, runtimeData) { gesture, runtime ->
+                uiState.copy(
+                    isGestureEnabled = gesture.initialSettings.gestureEnabled,
+                    gestureButtons = gesture.gestureButtons.sortedBy { it.id },
+                    subGestures = gesture.subGestureSettings.subGestures,
+                    pointer = runtime.gestureSettings.pointer,
+                    excludedAppCount = runtime.advancedSettings.excludeApps.size,
+                    selectedFrozenAppCount = runtime.frozenAppSettings.oneKeyPackageNames.size,
+                    isKeepAliveEnabled = runtime.advancedSettings.keepAliveEnabled,
+                ).withRuntimeStatus()
             }.collectLatest { state ->
                 updateUiState { state }
             }
         }
     }
+
+    protected fun UiState.withRuntimeStatus(): UiState {
+        return copy(
+            runtimeStatus = HomeRuntimeStatusMapper.map(
+                isAccessibilityEnabled = isAccessibilityEnabled,
+                isGestureEnabled = isGestureEnabled,
+                isKeepAliveEnabled = isKeepAliveEnabled,
+                shizukuStatus = shizukuStatus,
+            )
+        )
+    }
 }
+
+private data class HomeGestureData(
+    val initialSettings: InitialSettings,
+    val gestureButtons: List<GestureButton>,
+    val subGestureSettings: SubGestureSettings,
+)
+
+private data class HomeRuntimeData(
+    val gestureSettings: GestureSettings,
+    val advancedSettings: AdvancedSettings,
+    val frozenAppSettings: FrozenAppSettings,
+)

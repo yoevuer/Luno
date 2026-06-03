@@ -40,18 +40,6 @@ fun Context.gotoAccessibilitySettings() {
     }
 }
 
-fun Context.gotoOverlaySettings() {
-    val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
-        data = Uri.parse("package:${packageName}")
-    }
-    try {
-        startActivity(intent)
-    } catch (ignored: ActivityNotFoundException) {
-        intent.action = Settings.ACTION_SETTINGS
-        startActivity(intent)
-    }
-}
-
 fun Context.launchUrl(url: String): Boolean {
     return try {
         val normalizedUrl = normalizeOpenAppOrUrl(url) ?: run {
