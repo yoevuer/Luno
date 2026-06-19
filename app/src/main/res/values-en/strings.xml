@@ -497,12 +497,6 @@
     <string name="mirror_sub_gesture_desc">Mirror the current sub-gesture directions (left↔right, up-left↔up-right, down-left↔down-right).</string>
 
     <!-- Home screen -->
-    <string name="gesture_status_running">Gestures Running</string>
-    <string name="gesture_status_needs_accessibility">Accessibility Permission Required</string>
-    <string name="gesture_status_disabled">Gestures Disabled</string>
-    <string name="gesture_running_desc">Bottom, edge, and sub-gestures will respond according to current configuration.</string>
-    <string name="gesture_needs_accessibility_desc">Accessibility service permission must be granted before enabling.</string>
-    <string name="gesture_disabled_desc">Enable to use all configured gesture entry points.</string>
     <string name="collapse">Collapse</string>
     <string name="expand">Expand</string>
     <string name="manage_exclude">Manage Exclusion</string>

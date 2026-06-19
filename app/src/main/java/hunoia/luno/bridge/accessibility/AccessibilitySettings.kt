@@ -1,6 +1,7 @@
 package hunoia.luno.bridge.accessibility
 
 import android.accessibilityservice.AccessibilityService
+import android.content.ComponentName
 import android.content.Context
 import android.provider.Settings
 import android.text.TextUtils
@@ -8,7 +9,11 @@ import android.text.TextUtils
 object AccessibilitySettings {
 
     fun serviceId(context: Context, clazz: Class<out AccessibilityService>): String {
-        return "${context.packageName}/${clazz.name}"
+        return serviceComponentName(context, clazz).flattenToShortString()
+    }
+
+    private fun serviceComponentName(context: Context, clazz: Class<out AccessibilityService>): ComponentName {
+        return ComponentName(context.packageName, clazz.name)
     }
 
     fun isEnabled(context: Context, clazz: Class<out AccessibilityService>): Boolean {
@@ -24,9 +29,10 @@ object AccessibilitySettings {
 
         val splitter = TextUtils.SimpleStringSplitter(':')
         splitter.setString(settingValue)
-        val id = serviceId(context, clazz)
+        val componentName = serviceComponentName(context, clazz)
         while (splitter.hasNext()) {
-            if (splitter.next().equals(id, ignoreCase = true)) return true
+            val enabledComponent = ComponentName.unflattenFromString(splitter.next())
+            if (enabledComponent == componentName) return true
         }
         return false
     }
@@ -51,13 +57,15 @@ object AccessibilitySettings {
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
         ) ?: ""
 
-        val id = serviceId(context, clazz)
+        val componentName = serviceComponentName(context, clazz)
         val splitter = TextUtils.SimpleStringSplitter(':')
         splitter.setString(currentValue)
         while (splitter.hasNext()) {
-            if (splitter.next().equals(id, ignoreCase = true)) return false
+            val enabledComponent = ComponentName.unflattenFromString(splitter.next())
+            if (enabledComponent == componentName) return false
         }
 
+        val id = componentName.flattenToShortString()
         val newValue = if (currentValue.isEmpty()) id else "$id:$currentValue"
         return Settings.Secure.putString(
             context.contentResolver,
@@ -74,12 +82,12 @@ object AccessibilitySettings {
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
         ) ?: return true
 
-        val id = serviceId(context, clazz)
+        val componentName = serviceComponentName(context, clazz)
         val parts = TextUtils.SimpleStringSplitter(':').apply { setString(currentValue) }
         val remaining = mutableListOf<String>()
         while (parts.hasNext()) {
             val part = parts.next()
-            if (!part.equals(id, ignoreCase = true)) {
+            if (ComponentName.unflattenFromString(part) != componentName) {
                 remaining.add(part)
             }
         }

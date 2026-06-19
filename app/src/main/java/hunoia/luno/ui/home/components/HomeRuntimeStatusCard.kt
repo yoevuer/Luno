@@ -39,8 +39,8 @@ import hunoia.luno.ui.theme.Spacing8
 @Composable
 fun HomeRuntimeStatusCard(
     status: HomeRuntimeStatus,
-    isGestureEnabled: Boolean,
-    onGestureEnabledChange: (Boolean) -> Unit,
+    isGestureSwitchEnabled: Boolean,
+    onGestureSwitchEnabledChange: (Boolean) -> Unit,
     onAction: (HomeRuntimeAction) -> Unit,
 ) {
     val containerColor = when (status.level) {
@@ -106,8 +106,8 @@ fun HomeRuntimeStatusCard(
                     color = contentColor,
                 )
                 Switch(
-                    checked = isGestureEnabled,
-                    onCheckedChange = onGestureEnabledChange,
+                    checked = isGestureSwitchEnabled,
+                    onCheckedChange = onGestureSwitchEnabledChange,
                 )
             }
 

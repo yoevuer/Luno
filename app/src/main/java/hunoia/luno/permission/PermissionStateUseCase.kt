@@ -17,7 +17,8 @@ object PermissionStateUseCase {
     suspend fun loadHomePermissionState(context: Context): HomePermissionState {
         val appContext = context.applicationContext
         val gestureEnabledSetting = ConfigProvider.getInitialSettings().gestureEnabled
-        val accessibilityEnabled = appContext.isAccessibilitySettingsOn(SideGestureService::class.java)
+        val accessibilityEnabled = appContext.isAccessibilitySettingsOn(SideGestureService::class.java) ||
+            SideGestureService.current != null
         val hasWriteSecureSettings = appContext.hasWriteSecureSettingsPermission()
         val keepAliveEnabledSetting = ConfigProvider.getAdvancedSettings().keepAliveEnabled
         return HomePermissionState(

@@ -1,9 +1,11 @@
 package hunoia.luno.runtime.action
 
+import android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK
 import android.content.Context
 import android.util.Log
 import hunoia.luno.BuildConfig
 import hunoia.luno.action.api.ActionHandlerContext
+import hunoia.luno.action.api.ActionFacade
 import hunoia.luno.action.api.ActionRegistry
 import hunoia.luno.config.model.Action
 import hunoia.luno.config.model.ActionSettings
@@ -37,6 +39,10 @@ class ActionDispatcher(
         sourceOverride: GestureButtonActionSettingsOverride? = sourceButton?.actionSettingsOverride,
     ) {
         if (BuildConfig.DEBUG) Log.d("LunoLauncher", "dispatch action id=${action.value}")
+        if (action.value == ActionFacade.BACK) {
+            host.accessibilityService.performGlobalAction(GLOBAL_ACTION_BACK)
+            return
+        }
         scope.launch(Dispatchers.Main.immediate) {
             ActionRegistry.execute(action, buildActionHandlerContext(sourceButton, sourceOverride))
         }

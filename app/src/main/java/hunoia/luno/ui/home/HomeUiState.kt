@@ -23,7 +23,7 @@ sealed interface UiEvent {
 data class UiState(
     val gestureButtons: List<GestureButton> = emptyList(),
     val subGestures: List<SubGesture> = emptyList(),
-    val isGestureEnabled: Boolean = false,
+    val isGestureSwitchEnabled: Boolean = false,
     val isAccessibilityEnabled: Boolean = false,
     val isSubGestureListExpanded: Boolean = false,
     val isGestureButtonListExpanded: Boolean = false,
@@ -40,7 +40,7 @@ data class UiState(
     ),
     val runtimeStatus: HomeRuntimeStatus = HomeRuntimeStatusMapper.map(
         isAccessibilityEnabled = false,
-        isGestureEnabled = false,
+            isGestureSwitchEnabled = false,
         isKeepAliveEnabled = false,
         shizukuStatus = ShizukuStatus(
             installed = false,

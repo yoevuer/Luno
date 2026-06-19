@@ -60,14 +60,14 @@ object HomeRuntimeStatusMapper {
 
     fun map(
         isAccessibilityEnabled: Boolean,
-        isGestureEnabled: Boolean,
+        isGestureSwitchEnabled: Boolean,
         isKeepAliveEnabled: Boolean,
         shizukuStatus: ShizukuStatus,
     ): HomeRuntimeStatus {
         val shizukuUiStatus = shizukuStatus.toUiStatus()
         val primaryIssue = when {
             !isAccessibilityEnabled -> HomePrimaryIssue.AccessibilityDisabled
-            !isGestureEnabled -> HomePrimaryIssue.GestureDisabled
+            !isGestureSwitchEnabled -> HomePrimaryIssue.GestureDisabled
             shizukuUiStatus == HomeShizukuUiStatus.NotInstalled -> HomePrimaryIssue.ShizukuNotInstalled
             shizukuUiStatus == HomeShizukuUiStatus.NotRunning -> HomePrimaryIssue.ShizukuNotRunning
             shizukuUiStatus == HomeShizukuUiStatus.NotAuthorized -> HomePrimaryIssue.ShizukuNotAuthorized
@@ -103,7 +103,7 @@ object HomeRuntimeStatusMapper {
             shizuku = shizukuUiStatus,
             items = listOf(
                 HomeStatusItem(HomeStatusItemType.Accessibility, isAccessibilityEnabled),
-                HomeStatusItem(HomeStatusItemType.Gesture, isGestureEnabled),
+                HomeStatusItem(HomeStatusItemType.Gesture, isGestureSwitchEnabled),
                 HomeStatusItem(HomeStatusItemType.KeepAlive, isKeepAliveEnabled),
                 HomeStatusItem(
                     type = HomeStatusItemType.Shizuku,

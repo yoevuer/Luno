@@ -497,12 +497,6 @@
     <string name="mirror_sub_gesture_desc">将当前子手势方向做镜像复制（左↔右、左上↔右上、左下↔右下）。</string>
 
     <!-- Home screen -->
-    <string name="gesture_status_running">手势运行中</string>
-    <string name="gesture_status_needs_accessibility">需要无障碍权限</string>
-    <string name="gesture_status_disabled">手势已关闭</string>
-    <string name="gesture_running_desc">底部、侧边和子手势会按当前配置响应。</string>
-    <string name="gesture_needs_accessibility_desc">开启前需要先授予无障碍服务权限。</string>
-    <string name="gesture_disabled_desc">开启后即可使用已配置的所有手势入口。</string>
     <string name="collapse">收起</string>
     <string name="expand">展开</string>
     <string name="manage_exclude">管理排除</string>

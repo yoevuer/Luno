@@ -5,7 +5,6 @@
     <string name="home_status_unavailable">暂不可用</string>
     <string name="home_status_running_desc">核心状态可用，侧边手势可正常响应。</string>
     <string name="home_status_accessibility_desc">开启无障碍后可使用侧边手势。</string>
-    <string name="home_status_overlay_desc">开启悬浮窗后可显示侧边手势按钮。</string>
     <string name="home_status_gesture_desc">启用手势后恢复侧边触发。</string>
     <string name="home_status_shizuku_not_installed_desc">安装 Shizuku 后可授权系统能力。</string>
     <string name="home_status_shizuku_not_running_desc">启动 Shizuku 后刷新状态。</string>
@@ -13,8 +12,6 @@
     <string name="home_status_keep_alive_desc">启用后可降低服务被系统回收的概率。</string>
     <string name="status_accessibility_enabled">无障碍：已开启</string>
     <string name="status_accessibility_disabled">无障碍：未开启</string>
-    <string name="status_overlay_enabled">悬浮窗：已开启</string>
-    <string name="status_overlay_disabled">悬浮窗：未开启</string>
     <string name="status_gesture_enabled">手势：已启用</string>
     <string name="status_gesture_disabled">手势：已关闭</string>
     <string name="status_keep_alive_enabled">保活：已启用</string>
@@ -24,7 +21,6 @@
     <string name="status_shizuku_not_authorized">Shizuku：未授权</string>
     <string name="status_shizuku_authorized">Shizuku：已授权</string>
     <string name="open_accessibility">开启无障碍</string>
-    <string name="open_overlay">开启悬浮窗</string>
     <string name="enable_gesture">启用手势</string>
     <string name="request_shizuku_permission">请求权限</string>
     <string name="refresh_status">刷新状态</string>

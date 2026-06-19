@@ -7,6 +7,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.BroadcastReceiver
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -59,7 +60,8 @@ class DaemonService : Service() {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         startForegroundNotification(notificationManager)
 
-        val serviceId = "$packageName/$serviceClassName"
+        val serviceComponentName = ComponentName(packageName, serviceClassName)
+        val serviceId = serviceComponentName.flattenToShortString()
 
         selfWroteValue = Settings.Secure.getString(
             contentResolver,
@@ -73,7 +75,7 @@ class DaemonService : Service() {
                     Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
                 ) ?: ""
                 if (current == selfWroteValue) return
-                restoreIfNeeded(serviceId, current)
+                restoreIfNeeded(serviceComponentName, serviceId, current)
             }
         }
         contentResolver.registerContentObserver(
@@ -89,22 +91,17 @@ class DaemonService : Service() {
                     Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
                 ) ?: ""
                 if (current == selfWroteValue) return
-                restoreIfNeeded(serviceId, current)
+                restoreIfNeeded(serviceComponentName, serviceId, current)
             }
         }
         registerReceiver(screenReceiver, IntentFilter(Intent.ACTION_SCREEN_ON))
 
-        restoreIfNeeded(serviceId, selfWroteValue)
+        restoreIfNeeded(serviceComponentName, serviceId, selfWroteValue)
 
         return START_STICKY
     }
 
-    private fun restoreIfNeeded(serviceId: String, current: String) {
-        if (tokenContains(current, serviceId)) {
-            selfWroteValue = current
-            return
-        }
-
+    private fun restoreIfNeeded(serviceComponentName: ComponentName, serviceId: String, current: String) {
         val accessibilityEnabled = runCatching {
             Settings.Secure.getInt(contentResolver, Settings.Secure.ACCESSIBILITY_ENABLED) == 1
         }.getOrDefault(false)
@@ -117,6 +114,11 @@ class DaemonService : Service() {
             )
         }
 
+        if (tokenContains(current, serviceComponentName)) {
+            selfWroteValue = current
+            return
+        }
+
         val newValue = if (current.isBlank()) serviceId else "$serviceId:$current"
         selfWroteValue = newValue
         Settings.Secure.putString(
@@ -127,11 +129,11 @@ class DaemonService : Service() {
         updateNotification("已恢复无障碍服务", SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date()))
     }
 
-    private fun tokenContains(value: String, token: String): Boolean {
+    private fun tokenContains(value: String, componentName: ComponentName): Boolean {
         val splitter = TextUtils.SimpleStringSplitter(':')
         splitter.setString(value)
         while (splitter.hasNext()) {
-            if (splitter.next().equals(token, ignoreCase = true)) return true
+            if (ComponentName.unflattenFromString(splitter.next()) == componentName) return true
         }
         return false
     }

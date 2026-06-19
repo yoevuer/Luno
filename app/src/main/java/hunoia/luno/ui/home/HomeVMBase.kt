@@ -84,7 +84,7 @@ abstract class HomeVMBase : BaseComposeVM<UiState, UiEvent>() {
             val state = PermissionStateUseCase.loadHomePermissionState(AppContext.get())
             updateUiState {
                 it.copy(
-                    isGestureEnabled = state.isGestureEnabled,
+                    isGestureSwitchEnabled = state.isGestureEnabled,
                     isAccessibilityEnabled = state.isAccessibilityEnabled,
                     isKeepAliveEnabled = state.isKeepAliveEnabled,
                 ).withRuntimeStatus()
@@ -132,17 +132,20 @@ abstract class HomeVMBase : BaseComposeVM<UiState, UiEvent>() {
     protected fun saveSettings() {
         viewModelScope.launch {
             launch {
-                ConfigProvider.updateInitialSettings {
-                    it.copy(gestureEnabled = uiState.isGestureEnabled)
-                }
-            }
-            launch {
                 ConfigProvider.updateGestureButtons { uiState.gestureButtons }
             }
             launch {
                 ConfigProvider.updateSubGestureSettings {
                     SubGestureSettings(subGestures = uiState.subGestures)
                 }
+            }
+        }
+    }
+
+    protected fun saveGestureSwitchEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            ConfigProvider.updateInitialSettings {
+                it.copy(gestureEnabled = enabled)
             }
         }
     }
@@ -173,7 +176,7 @@ abstract class HomeVMBase : BaseComposeVM<UiState, UiEvent>() {
             }
             combine(gestureData, runtimeData) { gesture, runtime ->
                 uiState.copy(
-                    isGestureEnabled = gesture.initialSettings.gestureEnabled,
+                    isGestureSwitchEnabled = gesture.initialSettings.gestureEnabled,
                     gestureButtons = gesture.gestureButtons.sortedBy { it.id },
                     subGestures = gesture.subGestureSettings.subGestures,
                     pointer = runtime.gestureSettings.pointer,
@@ -191,7 +194,7 @@ abstract class HomeVMBase : BaseComposeVM<UiState, UiEvent>() {
         return copy(
             runtimeStatus = HomeRuntimeStatusMapper.map(
                 isAccessibilityEnabled = isAccessibilityEnabled,
-                isGestureEnabled = isGestureEnabled,
+                isGestureSwitchEnabled = isGestureSwitchEnabled,
                 isKeepAliveEnabled = isKeepAliveEnabled,
                 shizukuStatus = shizukuStatus,
             )

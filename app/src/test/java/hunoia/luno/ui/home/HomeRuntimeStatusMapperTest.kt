@@ -21,6 +21,21 @@ class HomeRuntimeStatusMapperTest {
     }
 
     @Test
+    fun `accessibility disabled takes priority while gesture switch remains enabled`() {
+        val status = map(
+            accessibility = false,
+            gesture = true,
+            keepAlive = true,
+            shizuku = ShizukuStatus(true, true, true, 2000),
+        )
+
+        assertEquals(HomePrimaryIssue.AccessibilityDisabled, status.primaryIssue)
+        assertEquals(HomeRuntimeStatusLevel.Unavailable, status.level)
+        assertEquals(HomeRuntimeAction.OpenAccessibility, status.primaryAction)
+        assertEquals(true, status.items.first { it.type == HomeStatusItemType.Gesture }.available)
+    }
+
+    @Test
     fun `gesture disabled follows accessibility priority`() {
         val status = map(
             accessibility = true,
@@ -88,7 +103,7 @@ class HomeRuntimeStatusMapperTest {
     ): HomeRuntimeStatus {
         return HomeRuntimeStatusMapper.map(
             isAccessibilityEnabled = accessibility,
-            isGestureEnabled = gesture,
+            isGestureSwitchEnabled = gesture,
             isKeepAliveEnabled = keepAlive,
             shizukuStatus = shizuku,
         )

@@ -204,8 +204,8 @@ fun HomeScreen(
                 ) {
                     HomeRuntimeStatusCard(
                         status = uiState.runtimeStatus,
-                        isGestureEnabled = uiState.isGestureEnabled,
-                        onGestureEnabledChange = vm::onAppGestureEnabledChange,
+                        isGestureSwitchEnabled = uiState.isGestureSwitchEnabled,
+                        onGestureSwitchEnabledChange = vm::onAppGestureEnabledChange,
                         onAction = { action ->
                             when (action) {
                                 HomeRuntimeAction.None -> Unit

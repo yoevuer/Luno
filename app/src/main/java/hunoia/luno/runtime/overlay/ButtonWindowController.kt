@@ -68,7 +68,7 @@ class ButtonWindowController(
             setOnTouchListener { v, event ->
                 MotionEventDispatcher.dispatch(event)
                 if (event.action == MotionEvent.ACTION_UP) v.performClick()
-                true
+                false
             }
             wm.addView(this, lp)
         }

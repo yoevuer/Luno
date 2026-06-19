@@ -174,9 +174,9 @@ class HomeVM : HomeVMBase() {
 
     fun onAppGestureEnabledChange(enabled: Boolean) {
         updateUiState {
-            it.copy(isGestureEnabled = enabled).withRuntimeStatus()
+            it.copy(isGestureSwitchEnabled = enabled).withRuntimeStatus()
         }
-        saveSettings()
+        saveGestureSwitchEnabled(enabled)
     }
 
     fun onGestureButtonEnabledChange(button: GestureButton, enabled: Boolean) {
